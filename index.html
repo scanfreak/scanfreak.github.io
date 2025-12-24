@@ -43,22 +43,22 @@
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
         embedded background="black">
 
-        <a-assets timeout="10000">
-            <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" loop="true" crossorigin="anonymous"></video>
-            <video id="vid2" src="videos/collection01/wisewizard/wisewizard02.mp4" loop="true" crossorigin="anonymous"></video>
-            <video id="vid3" src="videos/collection01/wisewizard/wisewizard03.mp4" loop="true" crossorigin="anonymous"></video>
-            <!-- Add more <video> lines here for additional videos (vid4, etc.) -->
-        </a-assets>
+            <a-assets timeout="10000">
+    <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" loop="true" crossorigin="anonymous" webkit-playsinline playsinline></video>
+    <video id="vid2" src="videos/collection01/wisewizard/wisewizard02.mp4" loop="true" crossorigin="anonymous" webkit-playsinline playsinline></video>
+    <video id="vid3" src="videos/collection01/wisewizard/wisewizard03.mp4" loop="true" crossorigin="anonymous" webkit-playsinline playsinline></video>
+    <!-- Add more videos here the same way -->
+</a-assets>
 
-        <a-entity mindar-image-target="targetIndex: 0">
-            <a-plane 
-                src="#randomVideo" 
-                position="0 0 0" rotation="-90 0 0" 
-                width="1" height="1" 
-                material="shader: flat; side: double" 
-                animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
-                animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
-            </a-plane>
+<a-entity mindar-image-target="targetIndex: 0">
+    <a-video 
+        id="arVideo"
+        src="#randomVideo" 
+        position="0 0 0.05"   <!-- Slight forward offset so it's in front of the image -->
+        rotation="-90 0 0"    <!-- Lays flat on the target (common fix) -->
+        width="1" height="1"  <!-- Adjust to match your wisewizardpic.png aspect ratio, e.g., width="1.5" height="1" if wider -->
+        playsinline
+    ></a-video>
         </a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
