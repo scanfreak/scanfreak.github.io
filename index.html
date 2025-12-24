@@ -65,27 +65,28 @@
     </a-scene>
 
     <script>
-    const videos = ['#vid1', '#vid2', '#vid3']; // Add more like '#vid4' here
-    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-    document.querySelector('a-plane').setAttribute('src', randomVideo);
+    const videos = ['#vid1', '#vid2', '#vid3']; // Add more '#vid4' etc.
+    const randomVideoId = videos[Math.floor(Math.random() * videos.length)];
+    
+    // Set the random video source
+    const arVideo = document.querySelector('#arVideo');
+    arVideo.setAttribute('src', randomVideoId);
 
-    // Better event listeners: Listen on the target entity (more reliable)
-    const targetEntity = document.querySelector('a-entity[mindar-image-target]');
+    // Hide/show overlay + play/pause video properly
+    const scene = document.querySelector('a-scene');
     const overlay = document.getElementById('overlay');
-
-    targetEntity.addEventListener('targetFound', () => {
-        overlay.classList.add('hidden');
-    });
-
-    targetEntity.addEventListener('targetLost', () => {
-        overlay.classList.remove('hidden');
-    });
-
-    // Play the selected video when found
-    targetEntity.addEventListener('targetFound', () => {
-        const videoEl = document.querySelector(randomVideo);
+    
+    scene.addEventListener('targetFound', () => {
+        overlay.style.display = 'none';
+        const videoEl = document.querySelector(randomVideoId);
         if (videoEl) videoEl.play();
     });
-    </script>
+    
+    scene.addEventListener('targetLost', () => {
+        overlay.style.display = 'flex';
+        const videoEl = document.querySelector(randomVideoId);
+        if (videoEl) videoEl.pause();
+    });
+</script>
 </body>
 </html>
