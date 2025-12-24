@@ -10,9 +10,9 @@
     body { margin: 0; overflow: hidden; }
     #overlay {
         position: absolute;
-        bottom: 20px;              /* Move to bottom of screen */
+        bottom: 20px;              /* Bottom of screen */
         left: 0; right: 0;
-        width: 100%;
+        width: 80%;
         padding: 20px;
         box-sizing: border-box;
         display: flex;
@@ -22,8 +22,8 @@
         font-size: 24px;
         text-align: center;
         font-family: Arial, sans-serif;
-        background: rgba(0, 0, 0, 0.6);   /* Darker but smaller background */
-        border-radius: 15px 15px 0 0;     /* Rounded top corners */
+        background: rgba(0, 0, 0, 0.4);   /* text background */
+        border-radius: 15px 15px 15px 15px;     /* Rounded corners */
         pointer-events: none;             /* Doesn't block camera */
         z-index: 10;
         transition: opacity 0.5s;         /* Smooth fade when hiding */
@@ -64,19 +64,27 @@
     </a-scene>
 
     <script>
-        const videos = ['#vid1', '#vid2', '#vid3']; // Add more like '#vid4' here
-        const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-        document.querySelector('a-plane').setAttribute('src', randomVideo);
+    const videos = ['#vid1', '#vid2', '#vid3']; // Add more like '#vid4' here
+    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+    document.querySelector('a-plane').setAttribute('src', randomVideo);
 
-        // Hide overlay when target found, show when lost
-        const scene = document.querySelector('a-scene');
-        const overlay = document.getElementById('overlay');
-        scene.addEventListener('targetFound', () => { overlay.style.display = 'none'; });
-        scene.addEventListener('targetLost', () => { overlay.style.display = 'flex'; });
+    // Better event listeners: Listen on the target entity (more reliable)
+    const targetEntity = document.querySelector('a-entity[mindar-image-target]');
+    const overlay = document.getElementById('overlay');
 
-        // Play the selected video
+    targetEntity.addEventListener('targetFound', () => {
+        overlay.classList.add('hidden');
+    });
+
+    targetEntity.addEventListener('targetLost', () => {
+        overlay.classList.remove('hidden');
+    });
+
+    // Play the selected video when found
+    targetEntity.addEventListener('targetFound', () => {
         const videoEl = document.querySelector(randomVideo);
         if (videoEl) videoEl.play();
+    });
     </script>
 </body>
 </html>
