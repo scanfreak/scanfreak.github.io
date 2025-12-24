@@ -4,42 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SCANFREAK AR</title>
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: black; }
-        #video { width: 100vw; height: 100vh; object-fit: cover; }
+        body { margin: 0; overflow: hidden; }
         #overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; align-items: center; justify-content: center;
-            pointer-events: none; /* Allows camera interaction */
-            color: white; font-family: Arial, sans-serif; font-size: 24px;
-            text-align: center; background: rgba(0, 0, 0, 0.4);
+            color: white; font-size: 24px; text-align: center;
+            background: rgba(0,0,0,0.5); z-index: 10;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <video id="video" autoplay playsinline muted></video>
-    <div id="overlay">
-        Point your camera at the SCANFREAK design!
-    </div>
+    <div id="overlay">Point your camera at the SCANFREAK design!</div>
+
+    <a-scene 
+        mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" 
+        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
+        embedded background="black">
+
+        <a-assets timeout="10000">
+            <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" loop="true" crossorigin="anonymous"></video>
+            <video id="vid2" src="videos/collection01/wisewizard/wisewizard02.mp4" loop="true" crossorigin="anonymous"></video>
+            <video id="vid3" src="videos/collection01/wisewizard/wisewizard03.mp4" loop="true" crossorigin="anonymous"></video>
+            <!-- Add more <video> lines here for additional videos (vid4, etc.) -->
+        </a-assets>
+
+        <a-entity mindar-image-target="targetIndex: 0">
+            <a-plane 
+                src="#randomVideo" 
+                position="0 0 0" rotation="-90 0 0" 
+                width="1" height="1" 
+                material="shader: flat; side: double" 
+                animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
+                animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
+            </a-plane>
+        </a-entity>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    </a-scene>
 
     <script>
-        const video = document.getElementById('video');
+        const videos = ['#vid1', '#vid2', '#vid3']; // Add more like '#vid4' here
+        const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+        document.querySelector('a-plane').setAttribute('src', randomVideo);
 
-        async function startCamera() {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment' } // Uses back camera on phones
-                });
-                video.srcObject = stream;
-            } catch (err) {
-                document.getElementById('overlay').innerText = 
-                    'Camera access denied or not available. Please allow camera and reload.';
-                console.error(err);
-            }
-        }
+        // Hide overlay when target found, show when lost
+        const scene = document.querySelector('a-scene');
+        const overlay = document.getElementById('overlay');
+        scene.addEventListener('targetFound', () => { overlay.style.display = 'none'; });
+        scene.addEventListener('targetLost', () => { overlay.style.display = 'flex'; });
 
-        startCamera();
+        // Play the selected video
+        const videoEl = document.querySelector(randomVideo);
+        if (videoEl) videoEl.play();
     </script>
 </body>
 </html>
