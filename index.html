@@ -12,7 +12,7 @@
         position: absolute;
         bottom: 20px;              /* Bottom of screen */
         left: 0; right: 0;
-        width: 80%;
+        width: 100%;
         padding: 20px;
         box-sizing: border-box;
         display: flex;
@@ -20,6 +20,7 @@
         justify-content: center;
         color: white;
         font-size: 24px;
+        text-shadow: 2px 2px 4px black; /* Makes text pop */
         text-align: center;
         font-family: Arial, sans-serif;
         background: rgba(0, 0, 0, 0.4);   /* text background */
@@ -34,7 +35,7 @@
     </style>
 </head>
 <body>
-    <div id="overlay">Point your camera at the SCANFREAK design!</div>
+    <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene 
         mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" 
