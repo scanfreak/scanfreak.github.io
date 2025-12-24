@@ -7,14 +7,30 @@
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; }
-        #overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; align-items: center; justify-content: center;
-            color: white; font-size: 24px; text-align: center;
-            background: rgba(0,0,0,0.5); z-index: 10;
-            pointer-events: none;
-        }
+    body { margin: 0; overflow: hidden; }
+    #overlay {
+        position: absolute;
+        bottom: 20px;              /* Move to bottom of screen */
+        left: 0; right: 0;
+        width: 100%;
+        padding: 20px;
+        box-sizing: border-box;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 24px;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        background: rgba(0, 0, 0, 0.6);   /* Darker but smaller background */
+        border-radius: 15px 15px 0 0;     /* Rounded top corners */
+        pointer-events: none;             /* Doesn't block camera */
+        z-index: 10;
+        transition: opacity 0.5s;         /* Smooth fade when hiding */
+    }
+    #overlay.hidden {
+        opacity: 0;
+    }
     </style>
 </head>
 <body>
