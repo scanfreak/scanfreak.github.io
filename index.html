@@ -21,6 +21,9 @@
         width: 100vw !important;
         height: 100vh !important;
 }
+    a-scene canvas {
+        background: transparent !important;
+}
 </style>
 
     body { margin: 0; overflow: hidden; }
@@ -57,7 +60,7 @@
         mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" 
         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
-        embedded background="black">
+        embedded>
 
         <a-assets timeout="10000">
             <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" crossorigin="anonymous"></video>
