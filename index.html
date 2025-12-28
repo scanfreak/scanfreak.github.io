@@ -71,7 +71,8 @@
             <a-plane 
                 src="#randomVideo" 
                 position="0 0 0.05" rotation="0 0 0" 
-                width="1" height="1" 
+                width="0.5625" <!-- match aspect ratio -->
+                height="1" 
                 material="shader: flat; side: double" 
                 animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
                 animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
