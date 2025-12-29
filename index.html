@@ -99,29 +99,20 @@ targetEntity.addEventListener('targetFound', () => {
     videoEl.play();
 
     // Wait for video metadata to load
-    videoEl.onloadedmetadata = () => {
-        const videoAspect = videoEl.videoWidth / videoEl.videoHeight;
+videoEl.onloadedmetadata = () => {
+    const videoAspect = videoEl.videoHeight / videoEl.videoWidth;
 
-        // Get target size from MindAR
-        const targetSize = targetEntity.components['mindar-image-target'].targetSize;
-        const targetWidth = targetSize.width;
-        const targetHeight = targetSize.height;
+    // ✅ Use target WIDTH only (this already matches your print)
+    const targetSize = targetEntity.components['mindar-image-target'].targetSize;
+    const planeWidth = targetSize.width;
 
-        let planeWidth, planeHeight;
+    // 📐 Calculate correct HEIGHT from aspect ratio
+    const planeHeight = planeWidth * videoAspect;
 
-        if (videoAspect > 1) {
-            // Landscape video
-            planeWidth = targetWidth;
-            planeHeight = targetWidth / videoAspect;
-        } else {
-            // Portrait or square
-            planeHeight = targetHeight;
-            planeWidth = targetHeight * videoAspect;
-        }
+    plane.setAttribute('width', planeWidth);
+    plane.setAttribute('height', planeHeight);
+};
 
-        plane.setAttribute('width', planeWidth);
-        plane.setAttribute('height', planeHeight);
-    };
 });
 
 targetEntity.addEventListener('targetLost', () => {
