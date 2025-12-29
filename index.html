@@ -69,10 +69,12 @@
 
         <a-entity mindar-image-target="targetIndex: 0" lock-rotation>
             <a-plane
-                id="videoPlane"  
+                id="videoPlane"
+                width="1"
+                height="1.778"  
                 position="0 0 0.05"
-                material="shader: flat; side: double" 
- targetFound"
+                material="shader: flat; side: double"
+                animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
                 animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
             </a-plane>
         </a-entity>
@@ -99,27 +101,7 @@ targetEntity.addEventListener('targetFound', () => {
     videoEl.play();
 
     // Wait for video metadata to load
-videoEl.onloadedmetadata = () => {
-
-    // 🔒 REAL printed image aspect
-    const IMAGE_ASPECT = 1366 / 768;
-
-    const targetSize = targetEntity.components['mindar-image-target'].targetSize;
-
-    // MindAR internal aspect (this is distorted)
-    const targetAspect = targetSize.height / targetSize.width;
-
-    // ✅ Width is trustworthy
-    const planeWidth = targetSize.width;
-
-    // 🧠 COMPENSATE MindAR Y squash
-    const correction = IMAGE_ASPECT / targetAspect;
-
-    const planeHeight = planeWidth * IMAGE_ASPECT * correction;
-
-    plane.setAttribute('width', planeWidth);
-    plane.setAttribute('height', planeHeight);
-};
+videoEl.onloadedmetadata = () => { };
 
 
 
