@@ -68,10 +68,11 @@
         </a-assets>
 
         <a-entity mindar-image-target="targetIndex: 0" lock-rotation>
-            <a-plane 
+            <a-plane
+                id="videoPlane" 
                 src="#randomVideo" 
                 position="0 0 0.05" 
-                width="0.5625"
+                width="1"
                 height="1" 
                 material="shader: flat; side: double" 
                 animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
@@ -83,27 +84,47 @@
     </a-scene>
 
     <script>
-    const videos = ['#vid1', '#vid2', '#vid3']; // Add more like '#vid4' here
-    const randomVideo = videos[Math.floor(Math.random() * videos.length)];
-    document.querySelector('a-plane').setAttribute('src', randomVideo);
+/* Pick random video */
+const videos = ['#vid1', '#vid2', '#vid3'];
+const randomVideo = videos[Math.floor(Math.random() * videos.length)];
 
-    // Better event listeners: Listen on the target entity (more reliable)
-    const targetEntity = document.querySelector('a-entity[mindar-image-target]');
-    const overlay = document.getElementById('overlay');
+/* Apply video to plane */
+const plane = document.querySelector('#videoPlane');
+plane.setAttribute('src', randomVideo);
 
-    targetEntity.addEventListener('targetFound', () => {
-        overlay.classList.add('hidden');
-    });
+/* Get video element */
+const videoEl = document.querySelector(randomVideo);
 
-    targetEntity.addEventListener('targetLost', () => {
-        overlay.classList.remove('hidden');
-    });
+/* AUTO ASPECT-RATIO FIX */
+videoEl.addEventListener('loadedmetadata', () => {
+    const videoAspect = videoEl.videoWidth / videoEl.videoHeight;
 
-    // Play the selected video when found
-    targetEntity.addEventListener('targetFound', () => {
-        const videoEl = document.querySelector(randomVideo);
-        if (videoEl) videoEl.play();
-    });
-    </script>
+    if (videoAspect >= 1) {
+        // Landscape or square
+        plane.setAttribute('width', 1);
+        plane.setAttribute('height', 1 / videoAspect);
+    } else {
+        // Portrait
+        plane.setAttribute('height', 1);
+        plane.setAttribute('width', videoAspect);
+    }
+});
+
+/* Overlay logic */
+const targetEntity = document.querySelector('a-entity[mindar-image-target]');
+const overlay = document.getElementById('overlay');
+
+targetEntity.addEventListener('targetFound', () => {
+    overlay.classList.add('hidden');
+    videoEl.play();
+});
+
+targetEntity.addEventListener('targetLost', () => {
+    overlay.classList.remove('hidden');
+    videoEl.pause();
+    videoEl.currentTime = 0;
+});
+</script>
+
 </body>
 </html>
