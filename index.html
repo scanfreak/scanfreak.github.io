@@ -100,18 +100,21 @@ targetEntity.addEventListener('targetFound', () => {
 
     // Wait for video metadata to load
 videoEl.onloadedmetadata = () => {
-    const videoAspect = videoEl.videoHeight / videoEl.videoWidth;
 
-    // ✅ Use target WIDTH only (this already matches your print)
+    // 🔒 YOUR PRINTED IMAGE ASPECT (768 x 1366)
+    const IMAGE_ASPECT = 1366 / 768;
+
+    // ✅ WIDTH from MindAR (already correct on your prints)
     const targetSize = targetEntity.components['mindar-image-target'].targetSize;
     const planeWidth = targetSize.width;
 
-    // 📐 Calculate correct HEIGHT from aspect ratio
-    const planeHeight = planeWidth * videoAspect;
+    // 📐 HEIGHT from PRINTED IMAGE (this fixes the short video)
+    const planeHeight = planeWidth * IMAGE_ASPECT;
 
     plane.setAttribute('width', planeWidth);
     plane.setAttribute('height', planeHeight);
 };
+
 
 });
 
