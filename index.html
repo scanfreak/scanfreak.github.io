@@ -83,48 +83,57 @@
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
-    <script>
-/* Pick random video */
+<script>
+/* -----------------------------
+   VIDEO SELECTION
+----------------------------- */
 const videos = ['#vid1', '#vid2', '#vid3'];
 const randomVideo = videos[Math.floor(Math.random() * videos.length)];
 
-/* Apply video to plane */
 const plane = document.querySelector('#videoPlane');
 plane.setAttribute('src', randomVideo);
 
-/* Get video element */
 const videoEl = document.querySelector(randomVideo);
 
-/* AUTO ASPECT-RATIO FIX */
-videoEl.addEventListener('loadedmetadata', () => {
-    const videoAspect = videoEl.videoWidth / videoEl.videoHeight;
+/* -----------------------------
+   TARGET → RATIO CONFIG
+   (YOU control these)
+----------------------------- */
+const targetRatios = {
+  0: 0.5625, // portrait
+  1: 1.0,    // square
+  2: 1.777   // landscape
+};
 
-    if (videoAspect >= 1) {
-        // Landscape or square
-        plane.setAttribute('width', 1);
-        plane.setAttribute('height', 1 / videoAspect);
-    } else {
-        // Portrait
-        plane.setAttribute('height', 1);
-        plane.setAttribute('width', videoAspect);
-    }
-});
-
-/* Overlay logic */
+/* -----------------------------
+   TARGET EVENTS
+----------------------------- */
 const targetEntity = document.querySelector('a-entity[mindar-image-target]');
 const overlay = document.getElementById('overlay');
 
-targetEntity.addEventListener('targetFound', () => {
-    overlay.classList.add('hidden');
-    videoEl.play();
+targetEntity.addEventListener('targetFound', (e) => {
+  overlay.classList.add('hidden');
+
+  const index = e.target.getAttribute('mindar-image-target').targetIndex;
+  const ratio = targetRatios[index] || 1;
+
+  // 🔥 THIS IS THE IMPORTANT PART
+  if (ratio >= 1) {
+    plane.setAttribute('scale', `1 ${1 / ratio} 1`);
+  } else {
+    plane.setAttribute('scale', `${ratio} 1 1`);
+  }
+
+  videoEl.play();
 });
 
 targetEntity.addEventListener('targetLost', () => {
-    overlay.classList.remove('hidden');
-    videoEl.pause();
-    videoEl.currentTime = 0;
+  overlay.classList.remove('hidden');
+  videoEl.pause();
+  videoEl.currentTime = 0;
 });
 </script>
+
 
 </body>
 </html>
