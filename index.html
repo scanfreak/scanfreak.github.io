@@ -6,6 +6,20 @@
     <title>SCANFREAK AR</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <script>
+    AFRAME.registerComponent('lock-rotation', {
+      init() {
+        this.locked = false;
+        this.el.addEventListener('targetFound', () => {
+          if (!this.locked) {
+            const r = this.el.getAttribute('rotation');
+            this.el.setAttribute('rotation', r);
+            this.locked = true;
+          }
+        });
+      }
+    });
+    </script>
 <style>
     html, body {
         width: 100%;
