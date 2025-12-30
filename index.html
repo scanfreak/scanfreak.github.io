@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -71,7 +72,7 @@
             <a-plane
                 id="videoPlane"
                 width="1"
-                height="1"  
+                height="1.778"  
                 position="0 0 0.05"
                 material="shader: flat; side: double"
                 animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
@@ -93,37 +94,21 @@ const targetEntity = document.querySelector('a-entity[mindar-image-target]');
 const overlay = document.getElementById('overlay');
 
 targetEntity.addEventListener('targetFound', () => {
-  overlay.classList.add('hidden');
+    overlay.classList.add('hidden');
 
-  const videoEl = document.querySelector(randomVideo);
-  if (!videoEl) return;
+const videoEl = document.querySelector(randomVideo);
+    if (!videoEl) return;
 
-  videoEl.play();
+    videoEl.play();
 
-  videoEl.onloadedmetadata = () => {
-    const aspect = videoEl.videoWidth / videoEl.videoHeight;
-    const bleed = 1.03;
+    // Wait for video metadata to load
+videoEl.onloadedmetadata = () => { };
 
-    if (aspect >= 1) {
-      // landscape or square
-      plane.setAttribute(
-        'scale',
-        `${bleed} ${(1 / aspect) * bleed} 1`
-      );
-    } else {
-      // portrait
-      plane.setAttribute(
-        'scale',
-        `${aspect * bleed} ${bleed} 1`
-      );
-    }
-  };
+
+
 });
 
 targetEntity.addEventListener('targetLost', () => {
-  overlay.classList.remove('hidden');
-
-  const videoEl = document.querySelector(randomVideo);
-  if (videoEl) videoEl.pause();
+    overlay.classList.remove('hidden');
 });
 </script>
