@@ -1,100 +1,139 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>SCANFREAK AR</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>SCANFREAK AR</title>
 
-  <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+<script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
-    }
+<style>
+html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+}
 
-    a-scene {
-      position: fixed !important;
-      top: 0;
-      left: 0;
-      width: 100vw !important;
-      height: 100vh !important;
-    }
+a-scene {
+    position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw !important;
+    height: 100vh !important;
+}
 
-    a-scene canvas {
-      background: transparent !important;
-    }
+a-scene canvas {
+    background: transparent !important;
+}
 
-    #overlay {
-      position: absolute;
-      bottom: 20px;
-      left: 0;
-      right: 0;
-      width: 100%;
-      padding: 20px;
-      box-sizing: border-box;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-size: 24px;
-      text-shadow: 2px 2px 4px black;
-      text-align: center;
-      font-family: Arial, sans-serif;
-      background: rgba(0, 0, 0, 0.4);
-      border-radius: 15px;
-      pointer-events: none;
-      z-index: 10;
-      transition: opacity 0.5s;
-    }
+#overlay {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    right: 0;
+    width: 100%;
+    padding: 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px black;
+    text-align: center;
+    font-family: Arial, sans-serif;
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 15px;
+    pointer-events: none;
+    z-index: 10;
+    transition: opacity 0.5s;
+}
 
-    #overlay.hidden {
-      opacity: 0;
-    }
-  </style>
+#overlay.hidden {
+    opacity: 0;
+}
+</style>
 </head>
 
 <body>
-  <div id="overlay">Point camera at the SCANFREAK design!</div>
+<div id="overlay">Point camera at the SCANFREAK design!</div>
 
-  <a-scene
+<a-scene
     mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;"
     color-space="sRGB"
     renderer="colorManagement: true, physicallyCorrectLights: true"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
-    embedded
-  >
+    embedded>
 
     <a-assets timeout="10000">
-      <!-- muted initially for mobile policy -->
-      <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" muted playsinline crossorigin="anonymous"></video>
-      <video id="vid2" src="videos/collection01/wisewizard/wisewizard02.mp4" muted playsinline crossorigin="anonymous"></video>
-      <video id="vid3" src="videos/collection01/wisewizard/wisewizard03.mp4" muted playsinline crossorigin="anonymous"></video>
+        <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" crossorigin="anonymous"></video>
+        <video id="vid2" src="videos/collection01/wisewizard/wisewizard02.mp4" crossorigin="anonymous"></video>
+        <video id="vid3" src="videos/collection01/wisewizard/wisewizard03.mp4" crossorigin="anonymous"></video>
     </a-assets>
 
     <a-entity mindar-image-target="targetIndex: 0" lock-rotation>
-
-      <!-- WRAPPER handles animation -->
-      <a-entity
-        id="videoWrapper"
-        scale="0.1 0.1 0.1"
-        animation="property: scale; to: 1 1 1; dur: 500; startEvents: targetFound"
-        animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
-
-        <!-- PLANE handles aspect ratio -->
         <a-plane
-          id="videoPlane"
-          width="1"
-          height="1"
-          position="0 0 0.05"
-          material="shader: flat; side: double">
+            id="videoPlane"
+            width="1"
+            height="1"
+            position="0 0 0.05"
+            material="shader: flat; side: double"
+            animation="property: scale; from: 0.001 0.001 1; to: 1 1 1; dur: 500; startEvents: grow"
+            animation__hide="property: scale; to: 0.001 0.001 1; dur: 300; startEvents: targetLost">
         </a-plane>
-
-      </a-entity>
     </a-entity>
 
-    <a-camera
+    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+</a-scene>
+
+<script>
+const videos = ['#vid1', '#vid2', '#vid3'];
+const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+
+const plane = document.getElementById('videoPlane');
+plane.setAttribute('src', randomVideo);
+
+const targetEntity = document.querySelector('a-entity[mindar-image-target]');
+const overlay = document.getElementById('overlay');
+const videoEl = document.querySelector(randomVideo);
+
+targetEntity.addEventListener('targetFound', () => {
+    overlay.classList.add('hidden');
+
+    if (!videoEl) return;
+
+    videoEl.play();
+
+    videoEl.onloadedmetadata = () => {
+        const videoAspect = videoEl.videoWidth / videoEl.videoHeight;
+        const bleed = 1.03; // slight overfill
+
+        let scaleX = 1;
+        let scaleY = 1;
+
+        if (videoAspect >= 1) {
+            // Landscape or square
+            scaleX = 1 * bleed;
+            scaleY = (1 / videoAspect) * bleed;
+        } else {
+            // Portrait
+            scaleX = videoAspect * bleed;
+            scaleY = 1 * bleed;
+        }
+
+        plane.setAttribute('scale', `${scaleX} ${scaleY} 1`);
+        plane.emit('grow');
+    };
+});
+
+targetEntity.addEventListener('targetLost', () => {
+    overlay.classList.remove('hidden');
+    if (videoEl) videoEl.pause();
+});
+</script>
+
+</body>
+</html>
