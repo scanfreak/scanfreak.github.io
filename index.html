@@ -71,7 +71,7 @@
             <a-plane
                 id="videoPlane"
                 width="1"
-                height="1.778"  
+                  
                 position="0 0 0.05"
                 material="shader: flat; side: double"
                 animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
@@ -83,31 +83,52 @@
     </a-scene>
 
     <script>
-const videos = ['#vid1', '#vid2', '#vid3'];
-const randomVideo = videos[Math.floor(Math.random() * videos.length)];
+    // 1. Select the random video
+    const videos = ['#vid1', '#vid2', '#vid3'];
+    const randomVideoId = videos[Math.floor(Math.random() * videos.length)];
+    
+    // 2. Get references to our elements
+    const videoEl = document.querySelector(randomVideoId);
+    const plane = document.getElementById('videoPlane');
+    const targetEntity = document.querySelector('a-entity[mindar-image-target]');
+    const overlay = document.getElementById('overlay');
 
-const plane = document.getElementById('videoPlane');
-plane.setAttribute('src', randomVideo);
+    // 3. Assign the video to the plane
+    plane.setAttribute('src', randomVideoId);
 
-const targetEntity = document.querySelector('a-entity[mindar-image-target]');
-const overlay = document.getElementById('overlay');
+    // 4. Function to dynamically resize the plane to match video aspect ratio
+    const resizePlaneToVideo = () => {
+        const videoWidth = videoEl.videoWidth;
+        const videoHeight = videoEl.videoHeight;
+        
+        if (videoWidth && videoHeight) {
+            // Calculate ratio (Height / Width)
+            const ratio = videoHeight / videoWidth;
+            
+            // Apply the new height to the plane (keeping width at 1)
+            plane.setAttribute('height', ratio);
+            
+            console.log(`Resized plane to: 1 x ${ratio} (Video: ${videoWidth}x${videoHeight})`);
+        }
+    };
 
-targetEntity.addEventListener('targetFound', () => {
-    overlay.classList.add('hidden');
+    // 5. Trigger resize logic
+    // We check readyState in case the video is already cached/loaded
+    if (videoEl.readyState >= 1) {
+        resizePlaneToVideo();
+    } else {
+        videoEl.addEventListener('loadedmetadata', resizePlaneToVideo);
+    }
 
-const videoEl = document.querySelector(randomVideo);
-    if (!videoEl) return;
+    // 6. Handle Target Found
+    targetEntity.addEventListener('targetFound', () => {
+        overlay.classList.add('hidden');
+        videoEl.play();
+    });
 
-    videoEl.play();
-
-    // Wait for video metadata to load
-videoEl.onloadedmetadata = () => { };
-
-
-
-});
-
-targetEntity.addEventListener('targetLost', () => {
-    overlay.classList.remove('hidden');
-});
+    // 7. Handle Target Lost
+    targetEntity.addEventListener('targetLost', () => {
+        overlay.classList.remove('hidden');
+        videoEl.pause(); // Good practice to pause video when not visible
+    });
 </script>
