@@ -55,27 +55,39 @@
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" 
+        mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; descriptors/collection01/nostradamus/nostradamus.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" 
         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
         embedded>
 
         <a-assets timeout="10000">
-            <video id="vid1" src="videos/collection01/wisewizard/wisewizard01.mp4" crossorigin="anonymous"></video>
-            <video id="vid2" src="videos/collection01/wisewizard/wisewizard02.mp4" crossorigin="anonymous"></video>
-            <video id="vid3" src="videos/collection01/wisewizard/wisewizard03.mp4" crossorigin="anonymous"></video>
-            <video id="vid4" src="videos/collection01/nostradamus/nostradamus01.mp4" crossorigin="anonymous"></video>
-            <video id="vid5" src="videos/collection01/nostradamus/nostradamus02.mp4" crossorigin="anonymous"></video>
-            <video id="vid6" src="videos/collection01/nostradamus/nostradamus03.mp4" crossorigin="anonymous"></video>
+            <video id="wiz1" src="videos/collection01/wisewizard/wisewizard01.mp4" crossorigin="anonymous"></video>
+            <video id="wiz2" src="videos/collection01/wisewizard/wisewizard02.mp4" crossorigin="anonymous"></video>
+            <video id="wiz3" src="videos/collection01/wisewizard/wisewizard03.mp4" crossorigin="anonymous"></video>
+            <video id="nos1" src="videos/collection01/nostradamus/nostradamus01.mp4" crossorigin="anonymous"></video>
+            <video id="nos2" src="videos/collection01/nostradamus/nostradamus02.mp4" crossorigin="anonymous"></video>
+            <video id="nos3" src="videos/collection01/nostradamus/nostradamus03.mp4" crossorigin="anonymous"></video>
 
 
 
             <!-- Add more <video> lines here for additional videos (vid4, etc.) -->
         </a-assets>
 
-        <a-entity mindar-image-target="targetIndex: 0" lock-rotation>
+        <a-entity mindar-image-target="targetIndex: 0" id="wisewizardTarget" lock-rotation>
             <a-plane
-                id="videoPlane"
+                id="wisewizardPlane"
+                width="1"
+                  
+                position="0 0 0.05"
+                material="shader: flat; side: double"
+                animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
+                animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
+            </a-plane>
+        </a-entity>
+
+        <a-entity mindar-image-target="targetIndex: 0" id="nostradamusTarget" lock-rotation>
+            <a-plane
+                id="nostradamusPlane"
                 width="1"
                   
                 position="0 0 0.05"
@@ -89,52 +101,42 @@
     </a-scene>
 
     <script>
-    // 1. Select the random video
-    const videos = ['#vid1', '#vid2', '#vid3'];
-    const randomVideoId = videos[Math.floor(Math.random() * videos.length)];
-    
-    // 2. Get references to our elements
-    const videoEl = document.querySelector(randomVideoId);
-    const plane = document.getElementById('videoPlane');
-    const targetEntity = document.querySelector('a-entity[mindar-image-target]');
     const overlay = document.getElementById('overlay');
 
-    // 3. Assign the video to the plane
-    plane.setAttribute('src', randomVideoId);
-
-    // 4. Function to dynamically resize the plane to match video aspect ratio
-    const resizePlaneToVideo = () => {
-        const videoWidth = videoEl.videoWidth;
-        const videoHeight = videoEl.videoHeight;
+    // Setup helper function to handle random video assignment and playback
+    const setupTarget = (targetId, planeId, videoIds) => {
+        const target = document.getElementById(targetId);
+        const plane = document.getElementById(planeId);
         
-        if (videoWidth && videoHeight) {
-            // Calculate ratio (Height / Width)
-            const ratio = videoHeight / videoWidth;
-            
-            // Apply the new height to the plane (keeping width at 1)
-            plane.setAttribute('height', ratio);
-            
-            console.log(`Resized plane to: 1 x ${ratio} (Video: ${videoWidth}x${videoHeight})`);
-        }
+        // Pick a random video from the provided list
+        const randomVidId = videoIds[Math.floor(Math.random() * videoIds.length)];
+        const videoEl = document.querySelector(randomVidId);
+        
+        // Assign video to plane
+        plane.setAttribute('src', randomVidId);
+
+        // Resize plane logic
+        const resize = () => {
+            const ratio = videoEl.videoHeight / videoEl.videoWidth;
+            if (ratio) plane.setAttribute('height', ratio);
+        };
+
+        if (videoEl.readyState >= 1) resize();
+        else videoEl.addEventListener('loadedmetadata', resize);
+
+        // Events
+        target.addEventListener('targetFound', () => {
+            overlay.classList.add('hidden');
+            videoEl.play();
+        });
+
+        target.addEventListener('targetLost', () => {
+            overlay.classList.remove('hidden');
+            videoEl.pause();
+        });
     };
 
-    // 5. Trigger resize logic
-    // We check readyState in case the video is already cached/loaded
-    if (videoEl.readyState >= 1) {
-        resizePlaneToVideo();
-    } else {
-        videoEl.addEventListener('loadedmetadata', resizePlaneToVideo);
-    }
-
-    // 6. Handle Target Found
-    targetEntity.addEventListener('targetFound', () => {
-        overlay.classList.add('hidden');
-        videoEl.play();
-    });
-
-    // 7. Handle Target Lost
-    targetEntity.addEventListener('targetLost', () => {
-        overlay.classList.remove('hidden');
-        videoEl.pause(); // Good practice to pause video when not visible
-    });
+    // Initialize both characters
+    setupTarget('wizardTarget', 'wizardPlane', ['#wiz1', '#wiz2', '#wiz3']);
+    setupTarget('nostradamusTarget', 'nostradamusPlane', ['#nos1', '#nos2', '#nos3']);
 </script>
