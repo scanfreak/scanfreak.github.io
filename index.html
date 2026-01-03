@@ -6,137 +6,111 @@
     <title>SCANFREAK AR</title>
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-<style>
-    html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        overflow: hidden;
-}
-
-    a-scene {
-        position: fixed !important;
-        top: 0;
-        left: 0;
-        width: 100vw !important;
-        height: 100vh !important;
-}
-    a-scene canvas {
-        background: transparent !important;
-}
-
-    #overlay {
-        position: absolute;
-        bottom: 20px;              /* Bottom of screen */
-        left: 0; right: 0;
-        width: 100%;
-        padding: 20px;
-        box-sizing: border-box;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 24px;
-        text-shadow: 2px 2px 4px black; /* Makes text pop */
-        text-align: center;
-        font-family: Arial, sans-serif;
-        background: rgba(0, 0, 0, 0.4);   /* text background */
-        border-radius: 15px 15px 15px 15px;     /* Rounded corners */
-        pointer-events: none;             /* Doesn't block camera */
-        z-index: 10;
-        transition: opacity 0.5s;         /* Smooth fade when hiding */
-    }
-    #overlay.hidden {
-        opacity: 0;
-    }
+    <style>
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+        a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
+        #overlay {
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            padding: 20px; text-align: center; color: white;
+            font-size: 24px; font-family: Arial, sans-serif;
+            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none;
+        }
+        #overlay.hidden { opacity: 0; }
     </style>
 </head>
 <body>
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: descriptors/collection01/wisewizard/wisewizard.mind; descriptors/collection01/nostradamus/nostradamus.mind; filterMinCF: 0.001; filterBeta: 1000; warmupTolerance: 5; missTolerance: 10;" 
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
-        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false"
-        embedded>
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
-        <a-assets timeout="10000">
-            <video id="wiz1" src="videos/collection01/wisewizard/wisewizard01.mp4" crossorigin="anonymous"></video>
-            <video id="wiz2" src="videos/collection01/wisewizard/wisewizard02.mp4" crossorigin="anonymous"></video>
-            <video id="wiz3" src="videos/collection01/wisewizard/wisewizard03.mp4" crossorigin="anonymous"></video>
-            <video id="nos1" src="videos/collection01/nostradamus/nostradamus01.mp4" crossorigin="anonymous"></video>
-            <video id="nos2" src="videos/collection01/nostradamus/nostradamus02.mp4" crossorigin="anonymous"></video>
-            <video id="nos3" src="videos/collection01/nostradamus/nostradamus03.mp4" crossorigin="anonymous"></video>
+        <a-assets>
+            </a-assets>
 
-
-
-            <!-- Add more <video> lines here for additional videos (vid4, etc.) -->
-        </a-assets>
-
-        <a-entity mindar-image-target="targetIndex: 0" id="wisewizardTarget" lock-rotation>
-            <a-plane
-                id="wisewizardPlane"
-                width="1"
-                  
-                position="0 0 0.05"
-                material="shader: flat; side: double"
-                animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
-                animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
-            </a-plane>
-        </a-entity>
-
-        <a-entity mindar-image-target="targetIndex: 1" id="nostradamusTarget" lock-rotation>
-            <a-plane
-                id="nostradamusPlane"
-                width="1"
-                  
-                position="0 0 0.05"
-                material="shader: flat; side: double"
-                animation="property: scale; from: 0.1 0.1 0.1; to: 1 1 1; dur: 500; startEvents: targetFound"
-                animation__hide="property: scale; to: 0.1 0.1 0.1; dur: 500; startEvents: targetLost">
-            </a-plane>
-        </a-entity>
+        <a-entity mindar-image-target="targetIndex: 0"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 1"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 2"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 3"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 4"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 5"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 6"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 7"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 8"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 9"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 10"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 11"><a-plane width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
-<script>
-    const overlay = document.getElementById('overlay');
+    <script>
+        const overlay = document.getElementById('overlay');
 
-    // Setup helper function to handle random video assignment and playback
-    const setupTarget = (targetId, planeId, videoIds) => {
-        const target = document.getElementById(targetId);
-        const plane = document.getElementById(planeId);
-        
-        // Pick a random video from the provided list
-        const randomVidId = videoIds[Math.floor(Math.random() * videoIds.length)];
-        const videoEl = document.querySelector(randomVidId);
-        
-        // Assign video to plane
-        plane.setAttribute('src', randomVidId);
-
-        // Resize plane logic
-        const resize = () => {
-            const ratio = videoEl.videoHeight / videoEl.videoWidth;
-            if (ratio) plane.setAttribute('height', ratio);
+        // This matches your map.txt and folder structure
+        const collectionMap = {
+            0: { folder: 'wizard', prefix: 'wiz', count: 20 },
+            1: { folder: 'witch3', prefix: 'wit3', count: 6 },
+            2: { folder: 'witch2', prefix: 'wit2', count: 6 },
+            3: { folder: 'witch1', prefix: 'wit1', count: 6 },
+            4: { folder: 'tealeaf', prefix: 'tea', count: 20 },
+            5: { folder: 'tarot', prefix: 'tar', count: 78 },
+            6: { folder: 'seer', prefix: 'see', count: 20 },
+            7: { folder: 'portal', prefix: 'por', count: 20 },
+            8: { folder: 'nostradamus', prefix: 'nos', count: 20 },
+            9: { folder: 'mystic', prefix: 'mys', count: 20 },
+            10: { folder: 'mermaid', prefix: 'mer', count: 20 },
+            11: { folder: 'fortune', prefix: 'for', count: 20 }
         };
 
-        if (videoEl.readyState >= 1) resize();
-        else videoEl.addEventListener('loadedmetadata', resize);
+        // Track active videos so we can stop them
+        const activeVideos = {};
 
-        // Events
-        target.addEventListener('targetFound', () => {
-            overlay.classList.add('hidden');
-            videoEl.play();
+        const setupTarget = (index) => {
+            const data = collectionMap[index];
+            const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
+            const plane = target.querySelector('a-plane');
+
+            target.addEventListener('targetFound', () => {
+                overlay.classList.add('hidden');
+
+                // Pick a random video
+                const rand = Math.floor(Math.random() * data.count) + 1;
+                const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
+
+                // Create the video element dynamically
+                const video = document.createElement('video');
+                video.src = videoPath;
+                video.crossOrigin = "anonymous";
+                video.loop = false;
+                
+                video.onloadedmetadata = () => {
+                    const ratio = video.videoHeight / video.videoWidth;
+                    plane.setAttribute('height', ratio);
+                    plane.setAttribute('src', video);
+                    video.play();
+                };
+
+                activeVideos[index] = video;
+            });
+
+            target.addEventListener('targetLost', () => {
+                overlay.classList.remove('hidden');
+                if (activeVideos[index]) {
+                    activeVideos[index].pause();
+                    activeVideos[index].src = ""; // Clear memory
+                    delete activeVideos[index];
+                }
+            });
+        };
+
+        window.addEventListener('load', () => {
+            for (let i = 0; i <= 11; i++) {
+                setupTarget(i);
+            }
         });
-
-        target.addEventListener('targetLost', () => {
-            overlay.classList.remove('hidden');
-            videoEl.pause();
-        });
-    };
-
-    // Initialize both characters
-    setupTarget('wisewizardTarget', 'wisewizardPlane', ['#wiz1', '#wiz2', '#wiz3']);
-    setupTarget('nostradamusTarget', 'nostradamusPlane', ['#nos1', '#nos2', '#nos3']);
-</script>
+    </script>
+</body>
+</html>
