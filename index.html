@@ -87,7 +87,7 @@
             video.onloadedmetadata = () => {
                 const ratio = video.videoHeight / video.videoWidth;
                 plane.setAttribute('height', ratio);
-                plane.setAttribute('src', video);
+                plane.setAttribute('material', {src: video, shader: 'flat'});
                 video.play();
             };
 
