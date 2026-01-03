@@ -84,13 +84,17 @@
                 const video = document.createElement('video');
                 video.src = videoPath;
                 video.crossOrigin = "anonymous";
+		video.setAttribute('webkit-playsinline', 'true');
+        	video.setAttribute('playsinline', 'true');
                 video.loop = false;
                 
                 video.onloadedmetadata = () => {
                     const ratio = video.videoHeight / video.videoWidth;
                     plane.setAttribute('height', ratio);
-                    plane.setAttribute('src', video);
-                    video.play();
+                    plane.setAttribute('material', 'src', video);
+                   video.play().then(() => {
+                // Force A-Frame to realize the texture is now active
+                plane.getObject3D('mesh').material.map.needsUpdate = true;
                 };
 
                 activeVideos[index] = video;
