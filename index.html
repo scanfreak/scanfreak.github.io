@@ -50,71 +50,81 @@
         const overlay = document.getElementById('overlay');
 
         // This matches your map.txt and folder structure
-        const collectionMap = {
-            0: { folder: 'wizard', prefix: 'wiz', count: 20 },
-            1: { folder: 'witch3', prefix: 'wit3', count: 6 },
-            2: { folder: 'witch2', prefix: 'wit2', count: 6 },
-            3: { folder: 'witch1', prefix: 'wit1', count: 6 },
-            4: { folder: 'tealeaf', prefix: 'tea', count: 20 },
-            5: { folder: 'tarot', prefix: 'tar', count: 78 },
-            6: { folder: 'seer', prefix: 'see', count: 20 },
-            7: { folder: 'portal', prefix: 'por', count: 20 },
-            8: { folder: 'nostradamus', prefix: 'nos', count: 20 },
-            9: { folder: 'mystic', prefix: 'mys', count: 20 },
-            10: { folder: 'mermaid', prefix: 'mer', count: 20 },
-            11: { folder: 'fortune', prefix: 'for', count: 20 }
-        };
+const collectionMap = [
+    { folder: 'tarot', prefix: 'tar', count: 20 },
+    { folder: 'nostradamus', prefix: 'nos', count: 20 },
+    { folder: 'wisewizard', prefix: 'wiz', count: 20 },
+    { folder: 'tealeaf', prefix: 'tea', count: 20 },
+    { folder: 'fortune', prefix: 'for', count: 20 },
+    { folder: 'mermaid', prefix: 'mer', count: 20 },
+    { folder: 'mystic', prefix: 'mys', count: 20 },
+    { folder: 'portal', prefix: 'por', count: 20 },
+    { folder: 'seer', prefix: 'see', count: 20 },
+    { folder: 'witch1', prefix: 'wit', count: 20 },
+    { folder: 'witch2', prefix: 'wtc', count: 20 },
+    { folder: 'witch3', prefix: 'wth', count: 20 }
+];
 
-        // Track active videos so we can stop them
-        const activeVideos = {};
+const activeVideos = {};
+const overlay = document.getElementById('overlay');
 
-        const setupTarget = (index) => {
-            const data = collectionMap[index];
-            const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-            const plane = target.querySelector('a-plane');
+const setupTarget = (index) => {
+    const data = collectionMap[index];
+    const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
+    if (!target) return; // Safety check
 
-            target.addEventListener('targetFound', () => {
-                overlay.classList.add('hidden');
+    const plane = target.querySelector('a-plane');
 
-                // Pick a random video
-                const rand = Math.floor(Math.random() * data.count) + 1;
-                const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
+    target.addEventListener('targetFound', () => {
+        console.log("Target Found: " + data.folder);
+        overlay.classList.add('hidden');
 
-                // Create the video element dynamically
-                const video = document.createElement('video');
-                video.src = videoPath;
-                video.crossOrigin = "anonymous";
-		video.setAttribute('webkit-playsinline', 'true');
-        	video.setAttribute('playsinline', 'true');
-                video.loop = false;
-                
-                video.onloadedmetadata = () => {
-                    const ratio = video.videoHeight / video.videoWidth;
-                    plane.setAttribute('height', ratio);
-                    plane.setAttribute('material', 'src', video);
-                   video.play().then(() => {
-                // Force A-Frame to realize the texture is now active
-                plane.getObject3D('mesh').material.map.needsUpdate = true;
-                };
+        const rand = Math.floor(Math.random() * data.count) + 1;
+        const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
 
-                activeVideos[index] = video;
-            });
+        const video = document.createElement('video');
+        video.src = videoPath;
+        video.crossOrigin = "anonymous";
+        video.setAttribute('webkit-playsinline', 'true');
+        video.setAttribute('playsinline', 'true');
+        video.loop = false;
 
-            target.addEventListener('targetLost', () => {
-                overlay.classList.remove('hidden');
-                if (activeVideos[index]) {
-                    activeVideos[index].pause();
-                    activeVideos[index].src = ""; // Clear memory
-                    delete activeVideos[index];
+        video.onloadedmetadata = () => {
+            const ratio = video.videoHeight / video.videoWidth;
+            plane.setAttribute('height', ratio);
+            plane.setAttribute('material', 'src', video);
+            
+            video.play().then(() => {
+                console.log("Video playing successfully");
+                // The crucial Android Refresh
+                if (plane.getObject3D('mesh')) {
+                    plane.getObject3D('mesh').material.map.needsUpdate = true;
                 }
+            }).catch(err => {
+                console.log("Play failed: ", err);
             });
         };
 
-        window.addEventListener('load', () => {
-            for (let i = 0; i <= 11; i++) {
-                setupTarget(i);
-            }
-        });
+        activeVideos[index] = video;
+    });
+
+    target.addEventListener('targetLost', () => {
+        overlay.classList.remove('hidden');
+        if (activeVideos[index]) {
+            activeVideos[index].pause();
+            activeVideos[index].src = ""; 
+            delete activeVideos[index];
+        }
+    });
+};
+
+// This is the "Ignition Switch"
+window.addEventListener('load', () => {
+    console.log("Page loaded, initializing targets...");
+    for (let i = 0; i < collectionMap.length; i++) {
+        setupTarget(i);
+    }
+});
     </script>
 </body>
 </html>
