@@ -47,84 +47,69 @@
     </a-scene>
 
     <script>
-        const overlay = document.getElementById('overlay');
+    const overlay = document.getElementById('overlay');
+    const activeVideos = {}; // Keeps track of what's playing
 
-        // This matches your map.txt and folder structure
-const collectionMap = [
-    { folder: 'tarot', prefix: 'tar', count: 20 },
-    { folder: 'nostradamus', prefix: 'nos', count: 20 },
-    { folder: 'wisewizard', prefix: 'wiz', count: 20 },
-    { folder: 'tealeaf', prefix: 'tea', count: 20 },
-    { folder: 'fortune', prefix: 'for', count: 20 },
-    { folder: 'mermaid', prefix: 'mer', count: 20 },
-    { folder: 'mystic', prefix: 'mys', count: 20 },
-    { folder: 'portal', prefix: 'por', count: 20 },
-    { folder: 'seer', prefix: 'see', count: 20 },
-    { folder: 'witch1', prefix: 'wit', count: 20 },
-    { folder: 'witch2', prefix: 'wtc', count: 20 },
-    { folder: 'witch3', prefix: 'wth', count: 20 }
-];
+    // 1. The Configuration Map
+    const collectionMap = {
+        0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
+        1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
+        2: { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
+        3: { name: 'witch1', prefix: 'wit1', count: 6, folder: 'witch1' },
+        4: { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
+        5: { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' },
+        6: { name: 'seer', prefix: 'see', count: 20, folder: 'seer' },
+        7: { name: 'portal', prefix: 'por', count: 20, folder: 'portal' },
+        8: { name: 'nostradamus', prefix: 'nos', count: 20, folder: 'nostradamus' },
+        9: { name: 'mystic', prefix: 'mys', count: 20, folder: 'mystic' },
+        10: { name: 'mermaid', prefix: 'mer', count: 20, folder: 'mermaid' },
+        11: { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
+    };
 
-const activeVideos = {};
-const overlay = document.getElementById('overlay');
+    // 2. The Logic
+    const setupTarget = (index) => {
+        const data = collectionMap[index];
+        const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
+        const plane = target.querySelector('a-plane');
 
-const setupTarget = (index) => {
-    const data = collectionMap[index];
-    const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-    if (!target) return; // Safety check
+        target.addEventListener('targetFound', () => {
+            overlay.classList.add('hidden');
 
-    const plane = target.querySelector('a-plane');
+            const rand = Math.floor(Math.random() * data.count) + 1;
+            const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
 
-    target.addEventListener('targetFound', () => {
-        console.log("Target Found: " + data.folder);
-        overlay.classList.add('hidden');
+            const video = document.createElement('video');
+            video.src = videoPath;
+            video.crossOrigin = "anonymous";
+            video.loop = false;
+            video.preload = "auto";
 
-        const rand = Math.floor(Math.random() * data.count) + 1;
-        const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
+            video.onloadedmetadata = () => {
+                const ratio = video.videoHeight / video.videoWidth;
+                plane.setAttribute('height', ratio);
+                plane.setAttribute('src', video);
+                video.play();
+            };
 
-        const video = document.createElement('video');
-        video.src = videoPath;
-        video.crossOrigin = "anonymous";
-        video.setAttribute('webkit-playsinline', 'true');
-        video.setAttribute('playsinline', 'true');
-        video.loop = false;
+            activeVideos[index] = video;
+        });
 
-        video.onloadedmetadata = () => {
-            const ratio = video.videoHeight / video.videoWidth;
-            plane.setAttribute('height', ratio);
-            plane.setAttribute('material', 'src', video);
-            
-            video.play().then(() => {
-                console.log("Video playing successfully");
-                // The crucial Android Refresh
-                if (plane.getObject3D('mesh')) {
-                    plane.getObject3D('mesh').material.map.needsUpdate = true;
-                }
-            }).catch(err => {
-                console.log("Play failed: ", err);
-            });
-        };
+        target.addEventListener('targetLost', () => {
+            overlay.classList.remove('hidden');
+            if (activeVideos[index]) {
+                activeVideos[index].pause();
+                activeVideos[index].src = ""; 
+                delete activeVideos[index];
+            }
+        });
+    };
 
-        activeVideos[index] = video;
-    });
-
-    target.addEventListener('targetLost', () => {
-        overlay.classList.remove('hidden');
-        if (activeVideos[index]) {
-            activeVideos[index].pause();
-            activeVideos[index].src = ""; 
-            delete activeVideos[index];
+    // 3. Start
+    window.addEventListener('load', () => {
+        for (let i = 0; i <= 11; i++) {
+            setupTarget(i);
         }
     });
-};
-
-// This is the "Ignition Switch"
-window.addEventListener('load', () => {
-    console.log("Page loaded, initializing targets...");
-    for (let i = 0; i < collectionMap.length; i++) {
-        setupTarget(i);
-    }
-});
     </script>
 </body>
 </html>
