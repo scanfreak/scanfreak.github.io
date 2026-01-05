@@ -4,37 +4,70 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>SCANFREAK AR</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
     <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    
     <style>
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
-        
-        /* Updated Overlay Styles */
-        #overlay {
+
+        /* --- START SCREEN --- */
+        #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 10; transition: opacity 0.5s;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 20; transition: opacity 0.5s;
         }
-        #overlay.hidden { opacity: 0; pointer-events: none; }
-        
-        .message {
-            color: white; font-size: 24px; font-family: Arial, sans-serif;
-            text-align: center; margin-bottom: 20px;
-        }
-        
+
         #start-btn {
-            padding: 12px 24px; background: white; border: none; border-radius: 5px;
-            font-size: 18px; font-weight: bold; cursor: pointer;
+            /* 2. APPLY THE 8-BIT FONT HERE */
+            font-family: 'Press Start 2P', cursive; 
+            padding: 20px 30px; /* Made it slightly bigger to fit the pixel font */
+            background: white; 
+            border: 4px solid #555; /* Added a border to match the retro style */
+            border-radius: 0px; /* 8-bit usually means square corners, but you can change back to 30px if you prefer round */
+            font-size: 20px; 
+            color: black;
+            cursor: pointer; 
+            text-transform: uppercase;
+            box-shadow: 4px 4px 0px #888; /* A little retro shadow effect */
         }
+        
+        #start-btn:active {
+            transform: translate(4px, 4px); /* Button pushes down when clicked */
+            box-shadow: none;
+        }
+
+        #start-screen.hidden { opacity: 0; pointer-events: none; }
+
+        /* --- SCANNING OVERLAY (Your curved box) --- */
+        #scanning-overlay {
+            position: absolute; bottom: 20px; left: 0; right: 0;
+            padding: 20px; text-align: center; color: white;
+            font-size: 24px; font-family: Arial, sans-serif;
+            text-shadow: 2px 2px 4px black; 
+            background: rgba(0, 0, 0, 0.4); 
+            border-radius: 15px; 
+            z-index: 10; 
+            transition: opacity 0.5s; 
+            pointer-events: none;
+            opacity: 0; 
+        }
+        #scanning-overlay.visible { opacity: 1; }
     </style>
 </head>
 <body>
-    <div id="overlay">
-        <div class="message">SCANFREAK AR</div>
-        <button id="start-btn">Start Experience</button>
+
+    <div id="start-screen">
+        <button id="start-btn">PRESS START</button>
     </div>
+
+    <div id="scanning-overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene 
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
@@ -60,14 +93,16 @@
     </a-scene>
 
     <script>
-    const overlay = document.getElementById('overlay');
+    const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
+    const scanningOverlay = document.getElementById('scanning-overlay');
+    
     const activeVideos = {}; 
-    let isStarted = false; // Flag to check if user clicked start
+    let isStarted = false; 
 
-    // Handle Start Button (Unlocks Audio)
     startBtn.addEventListener('click', () => {
-        overlay.classList.add('hidden');
+        startScreen.classList.add('hidden');
+        scanningOverlay.classList.add('visible'); 
         isStarted = true;
     });
 
@@ -90,11 +125,13 @@
         const data = collectionMap[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         const plane = target.querySelector('a-plane');
-        let isTargetVisible = false; // Local tracker for race conditions
+        let isTargetVisible = false;
 
         target.addEventListener('targetFound', () => {
+            if (!isStarted) return; 
+            
+            scanningOverlay.classList.remove('visible');
             isTargetVisible = true;
-            if (!isStarted) return; // Don't play if they haven't clicked Start
 
             const rand = Math.floor(Math.random() * data.count) + 1;
             const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -104,46 +141,23 @@
             video.crossOrigin = "anonymous";
             video.loop = false;
             video.preload = "auto";
-            video.playsInline = true; // Critical for mobile
-            // video.muted = true; // Uncomment if you STILL have autoplay issues
+            video.playsInline = true;
 
             video.onloadedmetadata = () => {
-                // RACE CONDITION FIX: Only show if target is still visible
                 if (isTargetVisible) {
                     const ratio = video.videoHeight / video.videoWidth;
                     plane.setAttribute('height', ratio);
                     plane.setAttribute('material', {src: video, shader: 'flat'});
-                    plane.setAttribute('visible', true); // Show plane NOW
+                    plane.setAttribute('visible', true);
                     
                     const playPromise = video.play();
                     if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Autoplay prevented:", error);
-                        });
+                        playPromise.catch(error => { console.log("Autoplay prevented:", error); });
                     }
                 }
             };
-
             activeVideos[index] = video;
         });
 
         target.addEventListener('targetLost', () => {
-            isTargetVisible = false;
-            plane.setAttribute('visible', false); // Hide plane immediately
-            
-            if (activeVideos[index]) {
-                activeVideos[index].pause();
-                activeVideos[index].src = ""; 
-                delete activeVideos[index];
-            }
-        });
-    };
-
-    window.addEventListener('load', () => {
-        for (let i = 0; i <= 11; i++) {
-            setupTarget(i);
-        }
-    });
-    </script>
-</body>
-</html>
+            isTarget
