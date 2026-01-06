@@ -16,7 +16,7 @@
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
 
-        /* --- START SCREEN --- */
+        /* START SCREEN STYLES */
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
@@ -25,40 +25,36 @@
         }
 
         #start-btn {
-            /* 2. APPLY THE 8-BIT FONT HERE */
-            font-family: 'Press Start 2P', cursive; 
-            padding: 20px 30px; /* Made it slightly bigger to fit the pixel font */
-            background: white; 
-            border: 4px solid #555; /* Added a border to match the retro style */
-            border-radius: 0px; /* 8-bit usually means square corners, but you can change back to 30px if you prefer round */
+            font-family: 'Press Start 2P', cursive;
+            padding: 15px 25px; 
             font-size: 20px; 
             color: black;
+            background: white; 
+            border: 4px solid #555; 
+            border-radius: 15px; /* Curved corners */
             cursor: pointer; 
             text-transform: uppercase;
-            box-shadow: 4px 4px 0px #888; /* A little retro shadow effect */
+            box-shadow: 4px 4px 0px #888; /* Blocky shadow */
         }
-        
+
         #start-btn:active {
-            transform: translate(4px, 4px); /* Button pushes down when clicked */
+            transform: translate(4px, 4px);
             box-shadow: none;
         }
 
         #start-screen.hidden { opacity: 0; pointer-events: none; }
 
-        /* --- SCANNING OVERLAY (Your curved box) --- */
-        #scanning-overlay {
+        /* ORIGINAL OVERLAY STYLES */
+        #overlay {
             position: absolute; bottom: 20px; left: 0; right: 0;
             padding: 20px; text-align: center; color: white;
             font-size: 24px; font-family: Arial, sans-serif;
-            text-shadow: 2px 2px 4px black; 
-            background: rgba(0, 0, 0, 0.4); 
-            border-radius: 15px; 
-            z-index: 10; 
-            transition: opacity 0.5s; 
-            pointer-events: none;
-            opacity: 0; 
+            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4);
+            border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none;
+            opacity: 0; /* Hidden initially until start is pressed */
         }
-        #scanning-overlay.visible { opacity: 1; }
+        #overlay.visible { opacity: 1; }
+        #overlay.hidden { opacity: 0; }
     </style>
 </head>
 <body>
@@ -67,7 +63,7 @@
         <button id="start-btn">PRESS START</button>
     </div>
 
-    <div id="scanning-overlay">Point camera at the SCANFREAK design!</div>
+    <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene 
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
@@ -95,14 +91,14 @@
     <script>
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
-    const scanningOverlay = document.getElementById('scanning-overlay');
-    
+    const overlay = document.getElementById('overlay');
     const activeVideos = {}; 
     let isStarted = false; 
 
+    // START BUTTON LOGIC
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
-        scanningOverlay.classList.add('visible'); 
+        overlay.classList.add('visible'); // Show original message
         isStarted = true;
     });
 
@@ -125,13 +121,13 @@
         const data = collectionMap[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         const plane = target.querySelector('a-plane');
-        let isTargetVisible = false;
+        let isTargetVisible = false; // Local flag
 
         target.addEventListener('targetFound', () => {
-            if (!isStarted) return; 
-            
-            scanningOverlay.classList.remove('visible');
+            if (!isStarted) return; // Wait for user start
+
             isTargetVisible = true;
+            overlay.classList.remove('visible'); // Hide message
 
             const rand = Math.floor(Math.random() * data.count) + 1;
             const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -141,14 +137,15 @@
             video.crossOrigin = "anonymous";
             video.loop = false;
             video.preload = "auto";
-            video.playsInline = true;
+            video.playsInline = true; // Optimization
 
             video.onloadedmetadata = () => {
+                // Optimization: Check visibility before playing
                 if (isTargetVisible) {
                     const ratio = video.videoHeight / video.videoWidth;
                     plane.setAttribute('height', ratio);
                     plane.setAttribute('material', {src: video, shader: 'flat'});
-                    plane.setAttribute('visible', true);
+                    plane.setAttribute('visible', true); // Show plane now
                     
                     const playPromise = video.play();
                     if (playPromise !== undefined) {
@@ -156,8 +153,31 @@
                     }
                 }
             };
+
             activeVideos[index] = video;
         });
 
         target.addEventListener('targetLost', () => {
-            isTarget
+            isTargetVisible = false;
+            plane.setAttribute('visible', false); // Hide plane
+            
+            if (isStarted) {
+                overlay.classList.add('visible'); // Show message
+            }
+
+            if (activeVideos[index]) {
+                activeVideos[index].pause();
+                activeVideos[index].src = ""; 
+                delete activeVideos[index];
+            }
+        });
+    };
+
+    window.addEventListener('load', () => {
+        for (let i = 0; i <= 11; i++) {
+            setupTarget(i);
+        }
+    });
+    </script>
+</body>
+</html>
