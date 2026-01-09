@@ -1,107 +1,15 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SCANFREAK AR</title>
-    
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
-
-    <script src="https://aframe.io/releases/1.7.1/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-    
-    <style>
-        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
-        a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
-
-        /* START SCREEN STYLES */
-        #start-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 20; transition: opacity 0.5s;
-        }
-
-        #start-btn {
-            font-family: 'Press Start 2P', cursive;
-            padding: 15px 25px; 
-            font-size: 20px; 
-            color: black;
-            background: white; 
-            border: 4px solid #555; 
-            border-radius: 15px; /* Curved corners */
-            cursor: pointer; 
-            text-transform: uppercase;
-            box-shadow: 4px 4px 0px #888; /* Blocky shadow */
-        }
-
-        #start-btn:active {
-            transform: translate(4px, 4px);
-            box-shadow: none;
-        }
-
-        #start-screen.hidden { opacity: 0; pointer-events: none; }
-
-        /* ORIGINAL OVERLAY STYLES */
-        #overlay {
-            position: absolute; bottom: 20px; left: 0; right: 0;
-            padding: 20px; text-align: center; color: white;
-            font-size: 24px; font-family: Arial, sans-serif;
-            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none;
-            opacity: 0; /* Hidden initially until start is pressed */
-        }
-        #overlay.visible { opacity: 1; }
-        #overlay.hidden { opacity: 0; }
-    </style>
-</head>
-<body>
-
-    <div id="start-screen">
-        <button id="start-btn">PRESS START</button>
-    </div>
-
-    <div id="overlay">Point camera at the SCANFREAK design!</div>
-
-    <a-scene 
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
-        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
-        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
-
-        <a-assets></a-assets>
-
-        <a-entity mindar-image-target="targetIndex: 0"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 1"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 2"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 3"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 4"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 5"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 6"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 7"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-    </a-scene>
-
-    <script>
-    const startScreen = document.getElementById('start-screen');
-    const startBtn = document.getElementById('start-btn');
+<script>
     const overlay = document.getElementById('overlay');
-    const activeVideos = {}; 
-    let isStarted = false; 
+    
+    // --- FIX 1: Create ONE shared video element for all targets (Works on iOS & Android) ---
+    const sharedVideo = document.createElement('video');
+    sharedVideo.crossOrigin = "anonymous";
+    sharedVideo.loop = false;
+    sharedVideo.preload = "auto";
+    sharedVideo.playsInline = true; // Critical for iPhone to not go fullscreen
+    sharedVideo.setAttribute('playsinline', ''); // Double safety for iOS
 
-    // START BUTTON LOGIC
-    startBtn.addEventListener('click', () => {
-        startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); // Show original message
-        isStarted = true;
-    });
-
+    // 1. The Configuration Map (Unchanged)
     const collectionMap = {
         0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
@@ -117,67 +25,46 @@
         11: { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
     };
 
+    // 2. The Logic
     const setupTarget = (index) => {
         const data = collectionMap[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         const plane = target.querySelector('a-plane');
-        let isTargetVisible = false; // Local flag
 
         target.addEventListener('targetFound', () => {
-            if (!isStarted) return; // Wait for user start
-
-            isTargetVisible = true;
-            overlay.classList.remove('visible'); // Hide message
+            overlay.classList.add('hidden');
 
             const rand = Math.floor(Math.random() * data.count) + 1;
             const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
 
-            const video = document.createElement('video');
-            video.src = videoPath;
-            video.crossOrigin = "anonymous";
-            video.loop = false;
-            video.preload = "auto";
-            video.playsInline = true; // Optimization
+            // Reuse the shared video player
+            sharedVideo.src = videoPath;
 
-            video.onloadedmetadata = () => {
-                // Optimization: Check visibility before playing
-                if (isTargetVisible) {
-                    const ratio = video.videoHeight / video.videoWidth;
-                    plane.setAttribute('height', ratio);
-                    plane.setAttribute('material', {src: video, shader: 'flat'});
-                    plane.setAttribute('visible', true); // Show plane now
-                    
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => { console.log("Autoplay prevented:", error); });
-                    }
-                }
+            sharedVideo.onloadedmetadata = () => {
+                const ratio = sharedVideo.videoHeight / sharedVideo.videoWidth;
+                plane.setAttribute('height', ratio);
+                
+                // --- FIX 2: Nudge video UP by changing position Y (middle number) ---
+                // 0.15 is roughly "100 pixels" up. Adjust this number if needed.
+                plane.setAttribute('position', "0 0.15 0.05"); 
+                
+                plane.setAttribute('material', {src: sharedVideo, shader: 'flat'});
+                sharedVideo.play();
             };
-
-            activeVideos[index] = video;
         });
 
         target.addEventListener('targetLost', () => {
-            isTargetVisible = false;
-            plane.setAttribute('visible', false); // Hide plane
-            
-            if (isStarted) {
-                overlay.classList.add('visible'); // Show message
-            }
-
-            if (activeVideos[index]) {
-                activeVideos[index].pause();
-                activeVideos[index].src = ""; 
-                delete activeVideos[index];
-            }
+            overlay.classList.remove('hidden');
+            // Just pause the shared video. No need to delete it.
+            sharedVideo.pause();
+            sharedVideo.src = ""; 
         });
     };
 
+    // 3. Start
     window.addEventListener('load', () => {
         for (let i = 0; i <= 11; i++) {
             setupTarget(i);
         }
     });
     </script>
-</body>
-</html>
