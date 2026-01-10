@@ -28,23 +28,34 @@
         .logo-wrapper {
             position: relative;
             overflow: hidden;
-            display: inline-block;
+            display: flex;
+	    justify-content: center;
+    	    align-items: center;
+   	 /* This ensures the logo stays in a "box" area */
+  	    width: 70vw; 
+    	    height: 70vw; 
+    	    max-width: 300px; 
+    	    max-height: 300px;
+    	    margin-bottom: 20px;
         }
 
         .logo-image {
-            width: 280px; /* Adjust size as needed */
-            display: block;
-            animation: fadeOut 3s ease-in-out forwards;
+            /* Scaling the logo to fit the "scanner" box height or width */
+    	    max-width: 90%;
+   	    max-height: 90%;
+            object-fit: contain;
+    	    display: block;
+   	    animation: fadeOut 3s ease-in-out forwards;
         }
 
         .logo-wrapper::after {
             content: "";
             position: absolute;
             top: -150%; left: -150%;
-            width: 50%; height: 300%;
-            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
-            transform: rotate(25deg);
-            animation: sweep 1.2s ease-in-out forwards;
+            width: 100%; height: 400%; /* Wider shine for the box area */
+    	    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
+  	    transform: rotate(25deg);
+   	    animation: sweep 1.2s ease-in-out forwards;
         }
 
         @keyframes sweep {
