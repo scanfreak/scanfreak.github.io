@@ -88,18 +88,28 @@
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
-    <script>
+<script>
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
     const overlay = document.getElementById('overlay');
-    const activeVideos = {}; 
     let isStarted = false; 
+
+    // Store video elements here to reuse them (Fixes iPhone Memory Crash)
+    const videoPool = {};
 
     // START BUTTON LOGIC
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); // Show original message
+        overlay.classList.add('visible'); 
         isStarted = true;
+        
+        // iOS Fix: "Warm up" the video engine on user click
+        // This tells iOS "the user interacted with the page, allow media"
+        for (let i = 0; i <= 11; i++) {
+            if (videoPool[i]) {
+                videoPool[i].load(); 
+            }
+        }
     });
 
     const collectionMap = {
@@ -121,55 +131,59 @@
         const data = collectionMap[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         const plane = target.querySelector('a-plane');
-        let isTargetVisible = false; // Local flag
+        let isTargetVisible = false;
+
+        // 1. PRE-CREATE VIDEO ELEMENT (Fixes Memory Leak)
+        // We create it once here, not inside targetFound
+        const video = document.createElement('video');
+        video.crossOrigin = "anonymous";
+        video.loop = false;
+        video.preload = "auto";
+        video.setAttribute('playsinline', ''); // Critical for iOS
+        video.setAttribute('webkit-playsinline', ''); // Backup for older iOS
+        video.style.display = 'none'; // Hide from DOM
+        document.body.appendChild(video); // Attach to DOM so iOS respects it
+        
+        videoPool[index] = video;
+
+        // Event listener to handle when video is actually ready (Fixes White Flash)
+        video.addEventListener('loadeddata', () => {
+            if (isTargetVisible) {
+                const ratio = video.videoHeight / video.videoWidth;
+                plane.setAttribute('height', ratio);
+                // Refresh the material to ensure A-Frame picks up the new frame
+                plane.setAttribute('material', {src: video, shader: 'flat'}); 
+                plane.setAttribute('visible', true);
+                
+                video.play().catch(e => console.log("Play prevented:", e));
+            }
+        });
 
         target.addEventListener('targetFound', () => {
-            if (!isStarted) return; // Wait for user start
+            if (!isStarted) return; 
 
             isTargetVisible = true;
-            overlay.classList.remove('visible'); // Hide message
+            overlay.classList.remove('visible'); 
 
             const rand = Math.floor(Math.random() * data.count) + 1;
             const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
 
-            const video = document.createElement('video');
+            // 2. REUSE THE EXISTING VIDEO
+            // Just swap the source and tell it to load
             video.src = videoPath;
-            video.crossOrigin = "anonymous";
-            video.loop = false;
-            video.preload = "auto";
-            video.playsInline = true; // Optimization
-
-            video.onloadedmetadata = () => {
-                // Optimization: Check visibility before playing
-                if (isTargetVisible) {
-                    const ratio = video.videoHeight / video.videoWidth;
-                    plane.setAttribute('height', ratio);
-                    plane.setAttribute('material', {src: video, shader: 'flat'});
-                    plane.setAttribute('visible', true); // Show plane now
-                    
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => { console.log("Autoplay prevented:", error); });
-                    }
-                }
-            };
-
-            activeVideos[index] = video;
+            video.load(); 
         });
 
         target.addEventListener('targetLost', () => {
             isTargetVisible = false;
-            plane.setAttribute('visible', false); // Hide plane
+            plane.setAttribute('visible', false); // Hide immediately to prevent lingering image
             
             if (isStarted) {
-                overlay.classList.add('visible'); // Show message
+                overlay.classList.add('visible'); 
             }
 
-            if (activeVideos[index]) {
-                activeVideos[index].pause();
-                activeVideos[index].src = ""; 
-                delete activeVideos[index];
-            }
+            // Just pause. Do not clear src or delete element.
+            video.pause();
         });
     };
 
