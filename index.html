@@ -21,7 +21,7 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: flex; justify-content: center; align-items: center;
-            z-index: 20; transition: opacity 0.5s;
+            z-index: 30; transition: opacity 0.5s;
         }
 
         #start-btn {
@@ -31,10 +31,10 @@
             color: black;
             background: white; 
             border: 4px solid #555; 
-            border-radius: 15px; /* Curved corners */
+            border-radius: 15px;
             cursor: pointer; 
             text-transform: uppercase;
-            box-shadow: 4px 4px 0px #888; /* Blocky shadow */
+            box-shadow: 4px 4px 0px #888;
         }
 
         #start-btn:active {
@@ -44,17 +44,43 @@
 
         #start-screen.hidden { opacity: 0; pointer-events: none; }
 
-        /* ORIGINAL OVERLAY STYLES */
+        /* OVERLAY MESSAGES */
         #overlay {
             position: absolute; bottom: 20px; left: 0; right: 0;
             padding: 20px; text-align: center; color: white;
             font-size: 24px; font-family: Arial, sans-serif;
             text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4);
             border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none;
-            opacity: 0; /* Hidden initially until start is pressed */
+            opacity: 0;
         }
         #overlay.visible { opacity: 1; }
-        #overlay.hidden { opacity: 0; }
+
+        /* HELP BUTTON (?) */
+        #help-btn {
+            position: absolute; top: 20px; right: 20px;
+            width: 45px; height: 45px;
+            background: rgba(0, 0, 0, 0.4);
+            color: white; border: 2px solid white; border-radius: 50%;
+            font-family: 'Press Start 2P', cursive; font-size: 20px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; z-index: 20; transition: opacity 0.5s;
+            opacity: 0; pointer-events: none;
+        }
+        #help-btn.visible { opacity: 1; pointer-events: auto; }
+
+        /* EXPANDED HELP MESSAGE */
+        #help-message {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 80%; max-width: 400px;
+            padding: 25px; text-align: center; color: white;
+            font-size: 18px; font-family: Arial, sans-serif;
+            background: rgba(0, 0, 0, 0.85);
+            border-radius: 15px; border: 1px solid #555;
+            z-index: 25; transition: opacity 0.5s;
+            opacity: 0; pointer-events: none;
+        }
+        #help-message.visible { opacity: 1; }
     </style>
 </head>
 <body>
@@ -63,6 +89,8 @@
         <button id="start-btn">PRESS START</button>
     </div>
 
+    <div id="help-btn">?</div>
+    <div id="help-message">If the scanner does not load, please pause your VPN, Adblocker or use a default browser like Chrome or Safari.</div>
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene 
@@ -88,28 +116,40 @@
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
-<script>
+    <script>
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
     const overlay = document.getElementById('overlay');
-    let isStarted = false; 
+    const helpBtn = document.getElementById('help-btn');
+    const helpMessage = document.getElementById('help-message');
 
-    // Store video elements here to reuse them (Fixes iPhone Memory Crash)
-    const videoPool = {};
+    let isStarted = false; 
+    let helpTimer;
+    const videoPool = {}; // Fixes iPhone Memory issues
+
+    const hideHelp = () => {
+        helpMessage.classList.remove('visible');
+        clearTimeout(helpTimer);
+    };
 
     // START BUTTON LOGIC
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
+        helpBtn.classList.add('visible'); // Help button becomes visible at top right
         isStarted = true;
         
-        // iOS Fix: "Warm up" the video engine on user click
-        // This tells iOS "the user interacted with the page, allow media"
+        // Interaction hack for iOS to allow media
         for (let i = 0; i <= 11; i++) {
-            if (videoPool[i]) {
-                videoPool[i].load(); 
-            }
+            if (videoPool[i]) videoPool[i].load(); 
         }
+    });
+
+    // HELP BUTTON CLICK LOGIC
+    helpBtn.addEventListener('click', () => {
+        hideHelp(); // Clear any existing timer
+        helpMessage.classList.add('visible');
+        helpTimer = setTimeout(hideHelp, 15000); // Disappear after 15s
     });
 
     const collectionMap = {
@@ -133,29 +173,25 @@
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
 
-        // 1. PRE-CREATE VIDEO ELEMENT (Fixes Memory Leak)
-        // We create it once here, not inside targetFound
+        // PRE-CREATE VIDEO PLAYER (POOLING)
         const video = document.createElement('video');
         video.crossOrigin = "anonymous";
         video.loop = false;
         video.preload = "auto";
-        video.setAttribute('playsinline', ''); // Critical for iOS
-        video.setAttribute('webkit-playsinline', ''); // Backup for older iOS
-        video.style.display = 'none'; // Hide from DOM
-        document.body.appendChild(video); // Attach to DOM so iOS respects it
+        video.setAttribute('playsinline', ''); 
+        video.setAttribute('webkit-playsinline', ''); 
+        video.style.display = 'none';
+        document.body.appendChild(video);
         
         videoPool[index] = video;
 
-        // Event listener to handle when video is actually ready (Fixes White Flash)
         video.addEventListener('loadeddata', () => {
             if (isTargetVisible) {
                 const ratio = video.videoHeight / video.videoWidth;
                 plane.setAttribute('height', ratio);
-                // Refresh the material to ensure A-Frame picks up the new frame
-                plane.setAttribute('material', {src: video, shader: 'flat'}); 
+                plane.setAttribute('material', {src: video, shader: 'flat'});
                 plane.setAttribute('visible', true);
-                
-                video.play().catch(e => console.log("Play prevented:", e));
+                video.play().catch(e => console.log("Play error:", e));
             }
         });
 
@@ -164,25 +200,20 @@
 
             isTargetVisible = true;
             overlay.classList.remove('visible'); 
+            hideHelp(); // Auto-hide help if the video starts working
 
             const rand = Math.floor(Math.random() * data.count) + 1;
-            const videoPath = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
-
-            // 2. REUSE THE EXISTING VIDEO
-            // Just swap the source and tell it to load
-            video.src = videoPath;
+            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load(); 
         });
 
         target.addEventListener('targetLost', () => {
             isTargetVisible = false;
-            plane.setAttribute('visible', false); // Hide immediately to prevent lingering image
+            plane.setAttribute('visible', false);
             
             if (isStarted) {
                 overlay.classList.add('visible'); 
             }
-
-            // Just pause. Do not clear src or delete element.
             video.pause();
         });
     };
