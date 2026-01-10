@@ -139,7 +139,7 @@
         helpBtn.classList.add('visible'); // Help button becomes visible at top right
         isStarted = true;
         
-        // Interaction hack for iOS to allow media
+        // Interaction fix for iOS to allow media
         for (let i = 0; i <= 11; i++) {
             if (videoPool[i]) videoPool[i].load(); 
         }
@@ -149,7 +149,7 @@
     helpBtn.addEventListener('click', () => {
         hideHelp(); // Clear any existing timer
         helpMessage.classList.add('visible');
-        helpTimer = setTimeout(hideHelp, 15000); // Disappear after 15s
+        helpTimer = setTimeout(hideHelp, 12000); // Disappear after 12s
     });
 
     const collectionMap = {
@@ -199,8 +199,13 @@
             if (!isStarted) return; 
 
             isTargetVisible = true;
+
+	    // Hide UI elements when video plays
             overlay.classList.remove('visible'); 
-            hideHelp(); // Auto-hide help if the video starts working
+	    helpBtn.classList.remove('visible');
+            // Auto-hide help if the video starts working
+	    hideHelp(); 
+
 
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -212,7 +217,9 @@
             plane.setAttribute('visible', false);
             
             if (isStarted) {
+	    // RE-SHOW UI elements when camera is searching
                 overlay.classList.add('visible'); 
+		helpBtn.classList.add('visible');
             }
             video.pause();
         });
