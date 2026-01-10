@@ -20,10 +20,43 @@
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
-            display: flex; justify-content: center; align-items: center;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 30; transition: opacity 0.5s;
         }
 
+        /* LOGO ANIMATION STYLES */
+        .logo-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .logo-image {
+            width: 280px; /* Adjust size as needed */
+            display: block;
+            animation: fadeOut 3s ease-in-out forwards;
+        }
+
+        .logo-wrapper::after {
+            content: "";
+            position: absolute;
+            top: -150%; left: -150%;
+            width: 50%; height: 300%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
+            transform: rotate(25deg);
+            animation: sweep 1.2s ease-in-out forwards;
+        }
+
+        @keyframes sweep {
+            100% { top: 100%; left: 100%; }
+        }
+
+        @keyframes fadeOut {
+            0%, 70% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.95); }
+        }
+
+        /* BUTTON STYLES */
         #start-btn {
             font-family: 'Press Start 2P', cursive;
             padding: 15px 25px; 
@@ -35,6 +68,16 @@
             cursor: pointer; 
             text-transform: uppercase;
             box-shadow: 4px 4px 0px #888;
+            /* Hidden initially */
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.8s ease-in;
+            position: absolute; /* Keeps it centered when logo fades */
+        }
+
+        #start-btn.visible {
+            opacity: 1;
+            pointer-events: auto;
         }
 
         #start-btn:active {
@@ -55,7 +98,6 @@
         }
         #overlay.visible { opacity: 1; }
 
-        /* HELP BUTTON (?) */
         #help-btn {
             position: absolute; top: 20px; right: 20px;
             width: 45px; height: 45px;
@@ -68,7 +110,6 @@
         }
         #help-btn.visible { opacity: 1; pointer-events: auto; }
 
-        /* EXPANDED HELP MESSAGE */
         #help-message {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
@@ -86,6 +127,9 @@
 <body>
 
     <div id="start-screen">
+        <div class="logo-wrapper" id="logo-container">
+            <img src="your-logo.png" class="logo-image" alt="SCANFREAK AR">
+        </div>
         <button id="start-btn">PRESS START</button>
     </div>
 
@@ -119,37 +163,48 @@
     <script>
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
+    const logoContainer = document.getElementById('logo-container');
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const helpMessage = document.getElementById('help-message');
 
     let isStarted = false; 
     let helpTimer;
-    const videoPool = {}; // Fixes iPhone Memory issues
+    const videoPool = {}; 
 
     const hideHelp = () => {
         helpMessage.classList.remove('visible');
         clearTimeout(helpTimer);
     };
 
+    // LOGO TIMING: Show button after 3 seconds
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            logoContainer.style.display = 'none'; // Clear space
+            startBtn.classList.add('visible');   // Fade in button
+        }, 3000);
+
+        for (let i = 0; i <= 11; i++) {
+            setupTarget(i);
+        }
+    });
+
     // START BUTTON LOGIC
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
-        helpBtn.classList.add('visible'); // Help button becomes visible at top right
+        helpBtn.classList.add('visible');
         isStarted = true;
         
-        // Interaction fix for iOS to allow media
         for (let i = 0; i <= 11; i++) {
             if (videoPool[i]) videoPool[i].load(); 
         }
     });
 
-    // HELP BUTTON CLICK LOGIC
     helpBtn.addEventListener('click', () => {
-        hideHelp(); // Clear any existing timer
+        hideHelp();
         helpMessage.classList.add('visible');
-        helpTimer = setTimeout(hideHelp, 12000); // Disappear after 12s
+        helpTimer = setTimeout(hideHelp, 12000);
     });
 
     const collectionMap = {
@@ -173,7 +228,6 @@
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
 
-        // PRE-CREATE VIDEO PLAYER (POOLING)
         const video = document.createElement('video');
         video.crossOrigin = "anonymous";
         video.loop = false;
@@ -197,15 +251,10 @@
 
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
-
             isTargetVisible = true;
-
-	    // Hide UI elements when video plays
             overlay.classList.remove('visible'); 
-	    helpBtn.classList.remove('visible');
-            // Auto-hide help if the video starts working
-	    hideHelp(); 
-
+            helpBtn.classList.remove('visible');
+            hideHelp(); 
 
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -215,21 +264,13 @@
         target.addEventListener('targetLost', () => {
             isTargetVisible = false;
             plane.setAttribute('visible', false);
-            
             if (isStarted) {
-	    // RE-SHOW UI elements when camera is searching
                 overlay.classList.add('visible'); 
-		helpBtn.classList.add('visible');
+                helpBtn.classList.add('visible');
             }
             video.pause();
         });
     };
-
-    window.addEventListener('load', () => {
-        for (let i = 0; i <= 11; i++) {
-            setupTarget(i);
-        }
-    });
     </script>
 </body>
 </html>
