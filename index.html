@@ -237,11 +237,25 @@
         });
     };
 
-    helpBtn.addEventListener('click', () => {
-        hideHelp();
-        helpMessage.classList.add('visible');
-        helpTimer = setTimeout(hideHelp, 12000);
+	// Updated Button Logic: Toggles the message on/off
+    	helpBtn.addEventListener('click', (e) => {
+   		 // Check if the message is currently showing
+    		if (helpMessage.classList.contains('visible')) {
+       		 // If it's already open, hide it immediately
+        	hideHelp();
+   		 } else {
+       		 // If it's closed, show it and start the 12s timer
+        	helpMessage.classList.add('visible');
+        	// Clear any existing timer before starting a new one 
+        	// to prevent overlapping timeouts
+        	clearTimeout(helpTimer); 
+        	helpTimer = setTimeout(hideHelp, 12000);
+    }
     });
+
+		// NEW: Also allows the user to tap the message box itself to close it
+	helpMessage.addEventListener('click', hideHelp);
+
     </script>
 </body>
 </html>
