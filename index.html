@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>SCANFREAK AR | PRO</title>
+    <title>SCANFREAK AR</title>
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,86 +13,75 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; background: #000; }
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
 
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, #1a1a1a 0%, #000 100%);
+            background: rgba(0, 0, 0, 0.9);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 30; transition: opacity 0.8s ease;
+            z-index: 30; transition: opacity 0.5s;
         }
 
-        /* LOGO & ANIMATIONS */
         .logo-wrapper {
             position: relative; overflow: hidden;
             display: flex; justify-content: center; align-items: center;
             width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
 
         .logo-image {
-            max-width: 90%; max-height: 90%; object-fit: contain;
-            opacity: 1; transition: opacity 1s;
+            max-width: 90%; max-height: 90%; object-fit: contain; display: block;
+            opacity: 1; /* Start visible */
         }
 
-        .animate-logo { animation: fadeOut 1.5s ease-in-out forwards; }
-
-        /* PROGRESS BAR STYLES */
-        #progress-container {
-            width: 200px; height: 4px; background: #333;
-            border-radius: 2px; overflow: hidden; margin-top: 10px;
-            transition: opacity 0.5s;
-        }
-        #progress-bar {
-            width: 0%; height: 100%; background: #fff;
-            box-shadow: 0 0 10px #fff; transition: width 0.3s;
+        /* NEW: Class to trigger animation via JS */
+        .animate-logo {
+            animation: fadeOut 3s ease-in-out forwards;
         }
 
-        /* PULSING START BUTTON */
+        .logo-wrapper::after {
+            content: ""; position: absolute;
+            top: -150%; left: -150%;
+            width: 100%; height: 400%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
+            transform: rotate(25deg);
+        }
+
+        /* NEW: Class to trigger sweep via JS */
+        .animate-sweep::after {
+            animation: sweep 1.2s ease-in-out forwards;
+        }
+
+        @keyframes sweep { 100% { top: 100%; left: 100%; } }
+        @keyframes fadeOut {
+            0%, 70% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0; transform: scale(0.95); }
+        }
+
         #start-btn {
             font-family: 'Press Start 2P', cursive;
-            padding: 18px 25px; font-size: 16px; color: black;
+            padding: 15px 15px; font-size: 15px; color: black;
             background: white; border: 4px solid #555; border-radius: 15px;
             cursor: pointer; text-transform: uppercase;
             box-shadow: 4px 4px 0px #888;
             opacity: 0; pointer-events: none;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.8s ease-in;
             position: absolute;
         }
 
-        #start-btn.visible { 
-            opacity: 1; 
-            pointer-events: auto; 
-            animation: pulse 2s infinite; /* Pulsing effect */
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 4px 4px 0px #888; }
-            50% { transform: scale(1.05); box-shadow: 0px 0px 20px rgba(255,255,255,0.4); }
-            100% { transform: scale(1); box-shadow: 4px 4px 0px #888; }
-        }
-
-        /* SHINE EFFECT */
-        .logo-wrapper::after {
-            content: ""; position: absolute; top: -150%; left: -150%;
-            width: 100%; height: 400%;
-            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.4), transparent);
-            transform: rotate(25deg);
-        }
-        .animate-sweep::after { animation: sweep 1.5s ease-in-out forwards; }
-
-        @keyframes sweep { 100% { top: 100%; left: 100%; } }
-        @keyframes fadeOut { 100% { opacity: 0; transform: scale(0.9); } }
-
-        /* UI OVERLAYS */
-        #overlay { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 85%; padding: 15px; text-align: center; color: white; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.6); border-radius: 50px; z-index: 10; opacity: 0; transition: opacity 0.5s; pointer-events: none; border: 1px solid rgba(255,255,255,0.2); }
-        #overlay.visible { opacity: 1; }
-        #help-btn { position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white; border-radius: 50%; font-family: 'Press Start 2P', cursive; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 20; opacity: 0; pointer-events: none; }
-        #help-btn.visible { opacity: 1; pointer-events: auto; }
-        #help-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.9); border-radius: 15px; z-index: 25; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
-        #help-message.visible { opacity: 1; pointer-events: auto; }
+        #start-btn.visible { opacity: 1; pointer-events: auto; }
+        #start-btn:active { transform: translate(4px, 4px); box-shadow: none; }
         #start-screen.hidden { opacity: 0; pointer-events: none; }
+
+        /* Rest of your styles remain the same... */
+        #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
+        #overlay.visible { opacity: 1; }
+        #help-btn { position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white; border-radius: 50%; font-family: 'Press Start 2P', cursive; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 20; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
+        #help-btn.visible { opacity: 1; pointer-events: auto; }
+        #help-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
+        #help-message.visible { opacity: 1; pointer-events: auto; /* This allows the click/tap to work! */
+	 }
     </style>
 </head>
 <body>
@@ -101,37 +90,32 @@
         <div class="logo-wrapper" id="logo-container">
             <img src="assets/scanfreakblanklogo.png" class="logo-image" id="main-logo" alt="SCANFREAK AR">
         </div>
-        
-        <div id="progress-container">
-            <div id="progress-bar"></div>
-        </div>
-
         <button id="start-btn">PRESS START</button>
     </div>
 
     <div id="help-btn">?</div>
-    <div id="help-message">Scanner not loading? Pause VPN/Adblock or use Chrome/Safari. <br><br> [Tap to close]</div>
+    <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene id="ar-scene"
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000; uiLoading: no; uiError: no; uiScanning: no;" 
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
         <a-assets></a-assets>
 
-        <a-entity mindar-image-target="targetIndex: 0"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 1"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 2"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 3"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 4"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 5"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 6"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 7"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" material="shader: flat; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 0"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 1"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 2"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 3"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 4"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 5"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 6"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 7"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
@@ -142,8 +126,6 @@
     const startBtn = document.getElementById('start-btn');
     const logoContainer = document.getElementById('logo-container');
     const mainLogo = document.getElementById('main-logo');
-    const progressBar = document.getElementById('progress-bar');
-    const progressContainer = document.getElementById('progress-container');
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const helpMessage = document.getElementById('help-message');
@@ -152,38 +134,37 @@
     let helpTimer;
     const videoPool = {}; 
 
-    // 1. TRACK LOADING PROGRESS
-    sceneEl.addEventListener("mindar-image-load-progress", (event) => {
-        const progress = event.detail.progress;
-        progressBar.style.width = `${progress}%`;
-        console.log("Loading progress:", progress);
-    });
+    const hideHelp = () => {
+        helpMessage.classList.remove('visible');
+        clearTimeout(helpTimer);
+    };
 
-    // 2. TRIGGER PROFESSIONAL ENTRANCE WHEN READY
+    // KEY CHANGE: Listen for MindAR being ready (Camera Allowed)
     sceneEl.addEventListener("arReady", (event) => {
-        // Hide progress bar
-        progressContainer.style.opacity = '0';
+        console.log("MindAR is ready");
         
-        // Trigger Shine
+        // 1. Trigger the Shine/Sweep and Fade animations now
         logoContainer.classList.add('animate-sweep');
-        
-        // Short delay for the shine to finish, then fade logo and show Pulse Button
+        mainLogo.classList.add('animate-logo');
+
+        // 2. Wait 3 seconds (duration of your fadeOut) then show button
         setTimeout(() => {
-            mainLogo.classList.add('animate-logo');
-            setTimeout(() => {
-                logoContainer.style.display = 'none';
-                startBtn.classList.add('visible');
-            }, 1000);
-        }, 1500);
+            logoContainer.style.display = 'none'; 
+            startBtn.classList.add('visible');   
+        }, 3000);
     });
 
-    // 3. START EXPERIENCE
+    window.addEventListener('load', () => {
+        for (let i = 0; i <= 11; i++) {
+            setupTarget(i);
+        }
+    });
+
+    // START BUTTON LOGIC
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
-        setTimeout(() => {
-            overlay.classList.add('visible'); 
-            helpBtn.classList.add('visible');
-        }, 500);
+        overlay.classList.add('visible'); 
+        helpBtn.classList.add('visible');
         isStarted = true;
         
         for (let i = 0; i <= 11; i++) {
@@ -191,7 +172,7 @@
         }
     });
 
-    // --- AR Logic ---
+    // ... (rest of your collectionMap and setupTarget functions remain exactly the same)
     const collectionMap = {
         0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
@@ -216,13 +197,22 @@
         const video = document.createElement('video');
         video.crossOrigin = "anonymous";
         video.loop = false;
+        video.preload = "auto";
         video.setAttribute('playsinline', ''); 
         video.setAttribute('webkit-playsinline', ''); 
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        
         videoPool[index] = video;
 
-        video.addEventListener('loadedmetadata', () => {
-            const ratio = video.videoHeight / video.videoWidth;
-            plane.setAttribute('height', ratio);
+        video.addEventListener('loadeddata', () => {
+            if (isTargetVisible) {
+                const ratio = video.videoHeight / video.videoWidth;
+                plane.setAttribute('height', ratio);
+                plane.setAttribute('material', {src: video, shader: 'flat'});
+                plane.setAttribute('visible', true);
+                video.play().catch(e => console.log("Play error:", e));
+            }
         });
 
         target.addEventListener('targetFound', () => {
@@ -230,13 +220,11 @@
             isTargetVisible = true;
             overlay.classList.remove('visible'); 
             helpBtn.classList.remove('visible');
-            
+            hideHelp(); 
+
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
-            
-            plane.setAttribute('material', {src: video, shader: 'flat'});
-            plane.setAttribute('visible', true);
-            video.play();
+            video.load(); 
         });
 
         target.addEventListener('targetLost', () => {
@@ -250,16 +238,24 @@
         });
     };
 
-    window.addEventListener('load', () => {
-        for (let i = 0; i <= 11; i++) setupTarget(i);
+	// Updated Button Logic: Toggles the message on/off
+    	helpBtn.addEventListener('click', (e) => {
+   		 // Check if the message is currently showing
+    		if (helpMessage.classList.contains('visible')) {
+       		 // If it's already open, hide it immediately
+        	hideHelp();
+   		 } else {
+       		 // If it's closed, show it and start the 12s timer
+        	helpMessage.classList.add('visible');
+        	// Clear any existing timer before starting a new one 
+        	// to prevent overlapping timeouts
+        	clearTimeout(helpTimer); 
+        	helpTimer = setTimeout(hideHelp, 12000);
+    }
     });
 
-    const hideHelp = () => { helpMessage.classList.remove('visible'); clearTimeout(helpTimer); };
-    helpBtn.addEventListener('click', () => {
-        if (helpMessage.classList.contains('visible')) { hideHelp(); } 
-        else { helpMessage.classList.add('visible'); helpTimer = setTimeout(hideHelp, 12000); }
-    });
-    helpMessage.addEventListener('click', hideHelp);
+		// NEW: Also allows the user to tap the message box itself to close it
+	helpMessage.addEventListener('click', hideHelp);
 
     </script>
 </body>
