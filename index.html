@@ -16,7 +16,6 @@
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
 
-        /* START SCREEN STYLES */
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
@@ -24,114 +23,63 @@
             z-index: 30; transition: opacity 0.5s;
         }
 
-        /* LOGO ANIMATION STYLES */
         .logo-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: flex;
-	    justify-content: center;
-    	    align-items: center;
-   	 /* This ensures the logo stays in a "box" area */
-  	    width: 70vw; 
-    	    height: 70vw; 
-    	    max-width: 300px; 
-    	    max-height: 300px;
-    	    margin-bottom: 20px;
+            position: relative; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
+            margin-bottom: 20px;
         }
 
         .logo-image {
-            /* Scaling the logo to fit the "scanner" box height or width */
-    	    max-width: 90%;
-   	    max-height: 90%;
-            object-fit: contain;
-    	    display: block;
-   	    animation: fadeOut 3s ease-in-out forwards;
+            max-width: 90%; max-height: 90%; object-fit: contain; display: block;
+            opacity: 1; /* Start visible */
+        }
+
+        /* NEW: Class to trigger animation via JS */
+        .animate-logo {
+            animation: fadeOut 3s ease-in-out forwards;
         }
 
         .logo-wrapper::after {
-            content: "";
-            position: absolute;
+            content: ""; position: absolute;
             top: -150%; left: -150%;
-            width: 100%; height: 400%; /* Wider shine for the box area */
-    	    background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
-  	    transform: rotate(25deg);
-   	    animation: sweep 1.2s ease-in-out forwards;
+            width: 100%; height: 400%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
+            transform: rotate(25deg);
         }
 
-        @keyframes sweep {
-            100% { top: 100%; left: 100%; }
+        /* NEW: Class to trigger sweep via JS */
+        .animate-sweep::after {
+            animation: sweep 1.2s ease-in-out forwards;
         }
 
+        @keyframes sweep { 100% { top: 100%; left: 100%; } }
         @keyframes fadeOut {
             0%, 70% { opacity: 1; transform: scale(1); }
             100% { opacity: 0; transform: scale(0.95); }
         }
 
-        /* BUTTON STYLES */
         #start-btn {
             font-family: 'Press Start 2P', cursive;
-            padding: 15px 15px; 
-            font-size: 15px; 
-            color: black;
-            background: white; 
-            border: 4px solid #555; 
-            border-radius: 15px;
-            cursor: pointer; 
-            text-transform: uppercase;
+            padding: 15px 15px; font-size: 15px; color: black;
+            background: white; border: 4px solid #555; border-radius: 15px;
+            cursor: pointer; text-transform: uppercase;
             box-shadow: 4px 4px 0px #888;
-            /* Hidden initially */
-            opacity: 0;
-            pointer-events: none;
+            opacity: 0; pointer-events: none;
             transition: opacity 0.8s ease-in;
-            position: absolute; /* Keeps it centered when logo fades */
+            position: absolute;
         }
 
-        #start-btn.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        #start-btn:active {
-            transform: translate(4px, 4px);
-            box-shadow: none;
-        }
-
+        #start-btn.visible { opacity: 1; pointer-events: auto; }
+        #start-btn:active { transform: translate(4px, 4px); box-shadow: none; }
         #start-screen.hidden { opacity: 0; pointer-events: none; }
 
-        /* OVERLAY MESSAGES */
-        #overlay {
-            position: absolute; bottom: 20px; left: 0; right: 0;
-            padding: 20px; text-align: center; color: white;
-            font-size: 24px; font-family: Arial, sans-serif;
-            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4);
-            border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none;
-            opacity: 0;
-        }
+        /* Rest of your styles remain the same... */
+        #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
-
-        #help-btn {
-            position: absolute; top: 20px; right: 20px;
-            width: 45px; height: 45px;
-            background: rgba(0, 0, 0, 0.4);
-            color: white; border: 2px solid white; border-radius: 50%;
-            font-family: 'Press Start 2P', cursive; font-size: 15px;
-            display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 20; transition: opacity 0.5s;
-            opacity: 0; pointer-events: none;
-        }
+        #help-btn { position: absolute; top: 20px; right: 20px; width: 45px; height: 45px; background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white; border-radius: 50%; font-family: 'Press Start 2P', cursive; font-size: 15px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 20; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
         #help-btn.visible { opacity: 1; pointer-events: auto; }
-
-        #help-message {
-            position: absolute; top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            width: 80%; max-width: 400px;
-            padding: 25px; text-align: center; color: white;
-            font-size: 18px; font-family: Arial, sans-serif;
-            background: rgba(0, 0, 0, 0.85);
-            border-radius: 15px; border: 1px solid #555;
-            z-index: 25; transition: opacity 0.5s;
-            opacity: 0; pointer-events: none;
-        }
+        #help-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
         #help-message.visible { opacity: 1; }
     </style>
 </head>
@@ -139,7 +87,7 @@
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
-            <img src="assets/scanfreakblanklogo.png" class="logo-image" alt="SCANFREAK AR">
+            <img src="assets/scanfreakblanklogo.png" class="logo-image" id="main-logo" alt="SCANFREAK AR">
         </div>
         <button id="start-btn">PRESS START</button>
     </div>
@@ -148,7 +96,7 @@
     <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
-    <a-scene 
+    <a-scene id="ar-scene"
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
         color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
@@ -172,9 +120,11 @@
     </a-scene>
 
     <script>
+    const sceneEl = document.querySelector('a-scene');
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
     const logoContainer = document.getElementById('logo-container');
+    const mainLogo = document.getElementById('main-logo');
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const helpMessage = document.getElementById('help-message');
@@ -188,13 +138,22 @@
         clearTimeout(helpTimer);
     };
 
-    // LOGO TIMING: Show button after 3 seconds
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            logoContainer.style.display = 'none'; // Clear space
-            startBtn.classList.add('visible');   // Fade in button
-        }, 3000);
+    // KEY CHANGE: Listen for MindAR being ready (Camera Allowed)
+    sceneEl.addEventListener("arReady", (event) => {
+        console.log("MindAR is ready");
+        
+        // 1. Trigger the Shine/Sweep and Fade animations now
+        logoContainer.classList.add('animate-sweep');
+        mainLogo.classList.add('animate-logo');
 
+        // 2. Wait 3 seconds (duration of your fadeOut) then show button
+        setTimeout(() => {
+            logoContainer.style.display = 'none'; 
+            startBtn.classList.add('visible');   
+        }, 3000);
+    });
+
+    window.addEventListener('load', () => {
         for (let i = 0; i <= 11; i++) {
             setupTarget(i);
         }
@@ -212,12 +171,7 @@
         }
     });
 
-    helpBtn.addEventListener('click', () => {
-        hideHelp();
-        helpMessage.classList.add('visible');
-        helpTimer = setTimeout(hideHelp, 12000);
-    });
-
+    // ... (rest of your collectionMap and setupTarget functions remain exactly the same)
     const collectionMap = {
         0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
@@ -282,6 +236,12 @@
             video.pause();
         });
     };
+
+    helpBtn.addEventListener('click', () => {
+        hideHelp();
+        helpMessage.classList.add('visible');
+        helpTimer = setTimeout(hideHelp, 12000);
+    });
     </script>
 </body>
 </html>
