@@ -99,7 +99,15 @@
             100% { transform: scale(1); box-shadow: 4px 4px 0px #888; }
         }
 
-	/* Position the X in the top-right corner */
+
+
+/* IMPORTANT: Ensure the box and its children accept clicks */
+#help-message.visible { 
+    opacity: 1; 
+    pointer-events: auto; /* This is the fix that allows tapping */
+}
+
+/* Position the X in the top-right corner */
 	#close-help {
    		 position: absolute;
     		top: 5px;
@@ -108,17 +116,13 @@
    		 font-weight: bold;
    		 cursor: pointer;
    		 color: #888;
+		line-height: 1;
+}
+		
+		#close-help:hover {
+		color: white;
 }
 
-#close-help:hover {
-    color: white;
-}
-
-/* IMPORTANT: Ensure the box and its children accept clicks */
-#help-message.visible { 
-    opacity: 1; 
-    pointer-events: auto; 
-}
         #start-btn:active { transform: translate(4px, 4px) !important; box-shadow: none !important; animation: none; }
         #start-screen.hidden { opacity: 0; pointer-events: none; }
 
