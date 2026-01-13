@@ -74,9 +74,23 @@
         #help-btn.visible { opacity: 1; pointer-events: auto; }
         #help-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
         #help-message.visible { opacity: 1; }
+
+        /* NEW ERROR UI STYLES */
+        #error-screen {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(139, 0, 0, 0.95); color: white;
+            display: none; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 100; text-align: center; padding: 20px; font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
+
+    <div id="error-screen">
+        <h2 style="font-family: 'Press Start 2P', cursive; font-size: 18px;">CAMERA BLOCKED</h2>
+        <p>Please click the camera/lock icon in your browser's address bar to allow access, then refresh the page.</p>
+        <button onclick="location.reload()" style="padding:10px; cursor:pointer;">RELOAD PAGE</button>
+    </div>
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
@@ -108,13 +122,12 @@
         <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
         <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
         <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
-    // 1. Hybrid Master Configuation to update future collection
     const COLLECTION_DATA = {
         0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
@@ -139,6 +152,7 @@
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const helpMessage = document.getElementById('help-message');
+    const errorScreen = document.getElementById('error-screen');
 
     let isStarted = false; 
     let helpTimer;
@@ -148,6 +162,14 @@
         helpMessage.classList.remove('visible');
         clearTimeout(helpTimer);
     };
+
+    // NEW: Handle Camera Errors
+    sceneEl.addEventListener("arError", (event) => {
+        console.error("MindAR Error:", event);
+        loadingContainer.style.display = 'none';
+        startScreen.style.display = 'none';
+        errorScreen.style.display = 'flex';
+    });
 
     sceneEl.addEventListener("arReady", () => {
         loadingContainer.style.display = 'none'; 
@@ -159,7 +181,6 @@
         }, 3000);
     });
 
-    // 2. Drive the setup logic from the COLLECTION_DATA keys
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => {
             setupTarget(index);
@@ -177,7 +198,7 @@
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-        if (!target) return; // Safety check
+        if (!target) return;
 
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
