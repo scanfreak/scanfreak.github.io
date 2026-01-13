@@ -146,72 +146,17 @@
 
         <a-assets></a-assets>
 
-        <a-entity mindar-image-target="targetIndex: 0"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 1"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 2"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 3"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 4"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 5"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 6"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 7"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity id="target-container"></a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
-    const sceneEl = document.querySelector('a-scene');
-    const startScreen = document.getElementById('start-screen');
-    const startBtn = document.getElementById('start-btn');
-    const loadingContainer = document.getElementById('loading-container');
-    const logoContainer = document.getElementById('logo-container');
-    const mainLogo = document.getElementById('main-logo');
-    const overlay = document.getElementById('overlay');
-    const helpBtn = document.getElementById('help-btn');
-    const helpMessage = document.getElementById('help-message');
-
-    let isStarted = false; 
-    let helpTimer;
-    const videoPool = {}; 
-
-    const hideHelp = () => {
-        helpMessage.classList.remove('visible');
-        clearTimeout(helpTimer);
-    };
-
-    // Camera/MindAR is Ready
-    sceneEl.addEventListener("arReady", (event) => {
-        loadingContainer.style.display = 'none'; // Hide loader
-        logoContainer.classList.add('animate-sweep');
-        mainLogo.classList.add('animate-logo');
-
-        setTimeout(() => {
-            logoContainer.style.display = 'none'; 
-            startBtn.classList.add('visible');   
-        }, 3000);
-    });
-
-    window.addEventListener('load', () => {
-        for (let i = 0; i <= 11; i++) {
-            setupTarget(i);
-        }
-    });
-
-    startBtn.addEventListener('click', () => {
-        startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        helpBtn.classList.add('visible');
-        isStarted = true;
-        
-        for (let i = 0; i <= 11; i++) {
-            if (videoPool[i]) videoPool[i].load(); 
-        }
-    });
-
-    const collectionMap = {
+    /**
+     * MASTER CONFIGURATION
+     * To update a collection, just edit this list.
+     */
+    const COLLECTION_DATA = {
         0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
         2: { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
@@ -226,8 +171,65 @@
         11: { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
     };
 
-    const setupTarget = (index) => {
-        const data = collectionMap[index];
+    const sceneEl = document.querySelector('a-scene');
+    const startScreen = document.getElementById('start-screen');
+    const startBtn = document.getElementById('start-btn');
+    const loadingContainer = document.getElementById('loading-container');
+    const logoContainer = document.getElementById('logo-container');
+    const mainLogo = document.getElementById('main-logo');
+    const overlay = document.getElementById('overlay');
+    const helpBtn = document.getElementById('help-btn');
+    const helpMessage = document.getElementById('help-message');
+    const targetContainer = document.getElementById('target-container');
+
+    let isStarted = false; 
+    let helpTimer;
+    const videoPool = {}; 
+
+    const hideHelp = () => {
+        helpMessage.classList.remove('visible');
+        clearTimeout(helpTimer);
+    };
+
+    // Camera/MindAR is Ready
+    sceneEl.addEventListener("arReady", (event) => {
+        loadingContainer.style.display = 'none'; 
+        logoContainer.classList.add('animate-sweep');
+        mainLogo.classList.add('animate-logo');
+
+        setTimeout(() => {
+            logoContainer.style.display = 'none'; 
+            startBtn.classList.add('visible');   
+        }, 3000);
+    });
+
+    // Initialize the app based on the Config
+    window.addEventListener('load', () => {
+        Object.keys(COLLECTION_DATA).forEach(index => {
+            createTargetEntity(index);
+            setupTargetLogic(index);
+        });
+    });
+
+    // Helper to create the HTML elements for each target automatically
+    function createTargetEntity(index) {
+        const entity = document.createElement('a-entity');
+        entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
+        entity.innerHTML = `<a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane>`;
+        targetContainer.appendChild(entity);
+    }
+
+    startBtn.addEventListener('click', () => {
+        startScreen.classList.add('hidden');
+        overlay.classList.add('visible'); 
+        helpBtn.classList.add('visible');
+        isStarted = true;
+        
+        Object.values(videoPool).forEach(video => video.load());
+    });
+
+    const setupTargetLogic = (index) => {
+        const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
@@ -287,7 +289,6 @@
     });
 
     helpMessage.addEventListener('click', hideHelp);
-
     </script>
 </body>
 </html>
