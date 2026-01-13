@@ -108,6 +108,7 @@
         #help-btn.visible { opacity: 1; pointer-events: auto; }
         #help-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; opacity: 0; pointer-events: none; }
         #help-message.visible { opacity: 1; }
+	pointer-events: auto; /* This allows the click/tap to work! */
     </style>
 </head>
 <body>
@@ -286,6 +287,8 @@
         }
     });
 
+	// Tap the message box itself to close it
+    helpMessage.style.pointerEvents = "auto"; // Alternative way to ensure it works
     helpMessage.addEventListener('click', hideHelp);
 
     </script>
