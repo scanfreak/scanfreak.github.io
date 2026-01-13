@@ -23,34 +23,19 @@
             z-index: 30; transition: opacity 0.5s;
         }
 
-        /* ANIMATED LOADING BAR */
         #loading-container {
-            width: 200px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            margin-top: 20px;
-            border-radius: 10px;
-            position: relative;
-            overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1);
+            margin-top: 20px; border-radius: 10px; position: relative;
+            overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         #loading-bar {
-            width: 40%;
-            height: 100%;
-            background: #ffffff;
-            position: absolute;
-            left: -40%;
-            border-radius: 10px;
-            animation: loadingMove 1.5s infinite ease-in-out;
-            box-shadow: 0 0 10px #fff;
+            width: 40%; height: 100%; background: #ffffff;
+            position: absolute; left: -40%; border-radius: 10px;
+            animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
         }
 
-        @keyframes loadingMove {
-            0% { left: -40%; }
-            50% { left: 100%; }
-            100% { left: -40%; }
-        }
+        @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
 
         .logo-wrapper {
             position: relative; overflow: hidden;
@@ -59,57 +44,27 @@
             margin-bottom: 20px;
         }
 
-        .logo-image {
-            max-width: 90%; max-height: 90%; object-fit: contain; display: block;
-            opacity: 1;
-        }
-
-        .animate-logo {
-            animation: fadeOut 3s ease-in-out forwards;
-        }
-
+        .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; opacity: 1; }
+        .animate-logo { animation: fadeOut 3s ease-in-out forwards; }
         .logo-wrapper::after {
-            content: ""; position: absolute;
-            top: -150%; left: -150%;
-            width: 100%; height: 400%;
+            content: ""; position: absolute; top: -150%; left: -150%; width: 100%; height: 400%;
             background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
             transform: rotate(25deg);
         }
 
-        .animate-sweep::after {
-            animation: sweep 1.2s ease-in-out forwards;
-        }
-
+        .animate-sweep::after { animation: sweep 1.2s ease-in-out forwards; }
         @keyframes sweep { 100% { top: 100%; left: 100%; } }
-        @keyframes fadeOut {
-            0%, 70% { opacity: 1; transform: scale(1); }
-            100% { opacity: 0; transform: scale(0.95); }
-        }
+        @keyframes fadeOut { 0%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95); } }
 
-        /* PULSING START BUTTON */
         #start-btn {
-            font-family: 'Press Start 2P', cursive;
-            padding: 15px 15px; font-size: 15px; color: black;
-            background: white; border: 4px solid #555; border-radius: 15px;
-            cursor: pointer; text-transform: uppercase;
-            box-shadow: 4px 4px 0px #888;
-            opacity: 0; pointer-events: none;
-            transition: opacity 0.8s ease-in;
-            position: absolute;
+            font-family: 'Press Start 2P', cursive; padding: 15px 15px; font-size: 15px; color: black;
+            background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer;
+            text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none;
+            transition: opacity 0.8s ease-in; position: absolute;
         }
 
-        #start-btn.visible { 
-            opacity: 1; 
-            pointer-events: auto; 
-            animation: pulseBtn 1.5s infinite;
-        }
-
-        @keyframes pulseBtn {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); }
-            100% { transform: scale(1); }
-        }
-
+        #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
+        @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 100% { transform: scale(1); } }
         #start-btn:active { transform: translate(4px, 4px); box-shadow: none; }
         #start-screen.hidden { opacity: 0; pointer-events: none; }
 
@@ -127,11 +82,7 @@
         <div class="logo-wrapper" id="logo-container">
             <img src="assets/scanfreakblanklogo.png" class="logo-image" id="main-logo" alt="SCANFREAK AR">
         </div>
-
-        <div id="loading-container">
-            <div id="loading-bar"></div>
-        </div>
-
+        <div id="loading-container"><div id="loading-bar"></div></div>
         <button id="start-btn">PRESS START</button>
     </div>
 
@@ -146,16 +97,24 @@
 
         <a-assets></a-assets>
 
-        <a-entity id="target-container"></a-entity>
+        <a-entity mindar-image-target="targetIndex: 0"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 1"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 2"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 3"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 4"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 5"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 6"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 7"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
-    /**
-     * MASTER CONFIGURATION
-     * To update a collection, just edit this list.
-     */
+    // 1. Hybrid Master Configuation to update future collection
     const COLLECTION_DATA = {
         0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
@@ -180,7 +139,6 @@
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const helpMessage = document.getElementById('help-message');
-    const targetContainer = document.getElementById('target-container');
 
     let isStarted = false; 
     let helpTimer;
@@ -191,46 +149,36 @@
         clearTimeout(helpTimer);
     };
 
-    // Camera/MindAR is Ready
-    sceneEl.addEventListener("arReady", (event) => {
+    sceneEl.addEventListener("arReady", () => {
         loadingContainer.style.display = 'none'; 
         logoContainer.classList.add('animate-sweep');
         mainLogo.classList.add('animate-logo');
-
         setTimeout(() => {
             logoContainer.style.display = 'none'; 
             startBtn.classList.add('visible');   
         }, 3000);
     });
 
-    // Initialize the app based on the Config
+    // 2. Drive the setup logic from the COLLECTION_DATA keys
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => {
-            createTargetEntity(index);
-            setupTargetLogic(index);
+            setupTarget(index);
         });
     });
-
-    // Helper to create the HTML elements for each target automatically
-    function createTargetEntity(index) {
-        const entity = document.createElement('a-entity');
-        entity.setAttribute('mindar-image-target', `targetIndex: ${index}`);
-        entity.innerHTML = `<a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane>`;
-        targetContainer.appendChild(entity);
-    }
 
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
         helpBtn.classList.add('visible');
         isStarted = true;
-        
-        Object.values(videoPool).forEach(video => video.load());
+        Object.values(videoPool).forEach(v => v.load());
     });
 
-    const setupTargetLogic = (index) => {
+    const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
+        if (!target) return; // Safety check
+
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
 
@@ -278,10 +226,9 @@
         });
     };
 
-    helpBtn.addEventListener('click', (e) => {
-        if (helpMessage.classList.contains('visible')) {
-            hideHelp();
-        } else {
+    helpBtn.addEventListener('click', () => {
+        if (helpMessage.classList.contains('visible')) hideHelp();
+        else {
             helpMessage.classList.add('visible');
             clearTimeout(helpTimer); 
             helpTimer = setTimeout(hideHelp, 12000);
