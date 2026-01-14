@@ -71,10 +71,11 @@
         #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
 
+        /* UNIFIED UI BUTTONS (Help & CTA) */
         .btn-ui {
             position: absolute; right: 20px; width: 45px; height: 45px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
-            border-radius: 12px;
+            border-radius: 12px; /* Rounded Corners */
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
             opacity: 0; pointer-events: none; text-decoration: none;
@@ -82,7 +83,7 @@
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
         #help-btn { top: 20px; font-family: 'Press Start 2P', cursive; font-size: 15px; }
-        #cta-btn { top: 75px; font-size: 20px; }
+        #cta-btn { top: 75px; font-size: 20px; } /* Stacked below Help */
 
         #help-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -183,7 +184,6 @@
         clearTimeout(helpTimer);
     };
 
-    // Camera/MindAR logic
     sceneEl.addEventListener("arError", (event) => {
         loadingContainer.style.display = 'none';
         startScreen.style.display = 'none';
@@ -200,10 +200,9 @@
         }, 3000);
     });
 
-    // Start-up sequence
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => {
-            setupTarget(parseInt(index));
+            setupTarget(index);
         });
     });
 
@@ -250,7 +249,7 @@
             isTargetVisible = true;
             overlay.classList.remove('visible'); 
             helpBtn.classList.remove('visible');
-            ctaBtn.classList.remove('visible');
+            ctaBtn.classList.remove('visible'); // HIDE CTA
             hideHelp(); 
 
             const rand = Math.floor(Math.random() * data.count) + 1;
@@ -264,22 +263,22 @@
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 helpBtn.classList.add('visible');
-                ctaBtn.classList.add('visible');
+                ctaBtn.classList.add('visible'); // SHOW CTA
             }
             video.pause();
         });
     };
 
     helpBtn.addEventListener('click', () => {
-        if (helpMessage.classList.contains('visible')) {
-            hideHelp();
-        } else {
+        if (helpMessage.classList.contains('visible')) hideHelp();
+        else {
             helpMessage.classList.add('visible');
             clearTimeout(helpTimer); 
             helpTimer = setTimeout(hideHelp, 12000);
         }
     });
 
+    // Tap help message to close it
     helpMessage.addEventListener('click', hideHelp);
     </script>
 </body>
