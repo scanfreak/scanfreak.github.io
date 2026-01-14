@@ -71,27 +71,23 @@
         #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
 
-        /* BUTTON UI STYLES */
         .btn-ui {
-            position: absolute; right: 20px; width: 45px; height: 45px;
+            position: absolute; width: 45px; height: 45px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
-            border-radius: 12px;
-            display: flex; justify-content: center; align-items: center;
+            border-radius: 12px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
-            opacity: 0; pointer-events: none; text-decoration: none;
-            overflow: hidden; /* Keeps image inside rounded corners */
+            opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden;
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
-        #help-btn { top: 20px; font-family: 'Press Start 2P', cursive; font-size: 15px; }
-        #cta-btn { top: 75px; } 
+        /* TOP NAVIGATION */
+        #help-btn { top: 20px; right: 20px; font-family: 'Press Start 2P', cursive; font-size: 15px; }
+        #share-btn { top: 20px; right: 75px; } /* To the left of Help */
+        
+        /* SIDE NAVIGATION */
+        #cta-btn { top: 75px; right: 20px; } 
 
-        /* Scale your custom PNG icon to fit the button */
-        .cta-icon {
-            width: 70%;
-            height: 70%;
-            object-fit: contain;
-        }
+        .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
         #help-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -128,8 +124,12 @@
 
     <div id="help-btn" class="btn-ui">?</div>
     
-    <a id="cta-btn" class="btn-ui" href="https://your-shopify-link-here.com" target="_blank">
-        <img src="assets/storeicon.png" class="cta-icon" alt="Shop">
+    <div id="share-btn" class="btn-ui">
+        <img src="assets/shareicon.png" class="ui-icon" alt="Share">
+    </div>
+
+    <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank">
+        <img src="assets/storeicon.png" class="ui-icon" alt="Shop">
     </a>
 
     <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
@@ -153,7 +153,7 @@
         <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
         <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
         <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
+        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-entity>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
@@ -183,23 +183,18 @@
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
+    const shareBtn = document.getElementById('share-btn');
     const helpMessage = document.getElementById('help-message');
-    const errorScreen = document.getElementById('error-screen');
 
     let isStarted = false; 
     let helpTimer;
+    let currentTargetName = "wizard"; // Fallback
     const videoPool = {}; 
 
     const hideHelp = () => {
         helpMessage.classList.remove('visible');
         clearTimeout(helpTimer);
     };
-
-    sceneEl.addEventListener("arError", (event) => {
-        loadingContainer.style.display = 'none';
-        startScreen.style.display = 'none';
-        errorScreen.style.display = 'flex';
-    });
 
     sceneEl.addEventListener("arReady", () => {
         loadingContainer.style.display = 'none'; 
@@ -212,16 +207,13 @@
     });
 
     window.addEventListener('load', () => {
-        Object.keys(COLLECTION_DATA).forEach(index => {
-            setupTarget(index);
-        });
+        Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index));
     });
 
     startBtn.addEventListener('click', () => {
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
-        helpBtn.classList.add('visible');
-        ctaBtn.classList.add('visible');
+        [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
     });
@@ -230,39 +222,33 @@
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         if (!target) return;
-
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
 
         const video = document.createElement('video');
         video.crossOrigin = "anonymous";
-        video.loop = false;
-        video.preload = "auto";
+        video.loop = false; video.preload = "auto";
         video.setAttribute('playsinline', ''); 
-        video.setAttribute('webkit-playsinline', ''); 
         video.style.display = 'none';
         document.body.appendChild(video);
-        
         videoPool[index] = video;
 
         video.addEventListener('loadeddata', () => {
             if (isTargetVisible) {
-                const ratio = video.videoHeight / video.videoWidth;
-                plane.setAttribute('height', ratio);
+                plane.setAttribute('height', video.videoHeight / video.videoWidth);
                 plane.setAttribute('material', {src: video, shader: 'flat'});
                 plane.setAttribute('visible', true);
-                video.play().catch(e => console.log("Play error:", e));
+                video.play().catch(e => console.log(e));
             }
         });
 
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
             isTargetVisible = true;
+            currentTargetName = data.name; // Track active target
             overlay.classList.remove('visible'); 
-            helpBtn.classList.remove('visible');
-            ctaBtn.classList.remove('visible'); 
+            [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
             hideHelp(); 
-
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load(); 
@@ -273,12 +259,42 @@
             plane.setAttribute('visible', false);
             if (isStarted) {
                 overlay.classList.add('visible'); 
-                helpBtn.classList.add('visible');
-                ctaBtn.classList.add('visible');
+                [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
         });
     };
+
+    // SHARE LOGIC WITH IMAGE ATTACHMENT
+    shareBtn.addEventListener('click', async () => {
+        const shareText = "Got my hands on some wild merch. It’s freakin’ on another level — it literally comes alive! You've got to experience this immersive AR for yourself 👀";
+        const shareUrl = "https://scanfreak.myshopify.com";
+        const imagePath = `assets/${currentTargetName}_share.png`;
+
+        try {
+            // Attempt to fetch the image to share it as a file
+            const response = await fetch(imagePath);
+            const blob = await response.blob();
+            const file = new File([blob], `${currentTargetName}_share.png`, { type: blob.type });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    files: [file],
+                    title: 'SCANFREAK AR',
+                    text: shareText,
+                    url: shareUrl
+                });
+            } else if (navigator.share) {
+                // Fallback for browsers that share text/url but not files
+                await navigator.share({ title: 'SCANFREAK AR', text: shareText, url: shareUrl });
+            } else {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${shareUrl}`, '_blank');
+            }
+        } catch (err) {
+            // Ultimate fallback if file fetch fails
+            if (navigator.share) await navigator.share({ title: 'SCANFREAK AR', text: shareText, url: shareUrl });
+        }
+    });
 
     helpBtn.addEventListener('click', () => {
         if (helpMessage.classList.contains('visible')) hideHelp();
@@ -288,7 +304,6 @@
             helpTimer = setTimeout(hideHelp, 12000);
         }
     });
-
     helpMessage.addEventListener('click', hideHelp);
     </script>
 </body>
