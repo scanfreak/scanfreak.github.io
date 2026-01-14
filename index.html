@@ -71,11 +71,10 @@
         #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
 
-        /* UNIFIED UI BUTTONS (Help & CTA) */
         .btn-ui {
             position: absolute; right: 20px; width: 45px; height: 45px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
-            border-radius: 12px; /* Rounded Corners */
+            border-radius: 12px;
             display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
             opacity: 0; pointer-events: none; text-decoration: none;
@@ -83,7 +82,7 @@
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
         #help-btn { top: 20px; font-family: 'Press Start 2P', cursive; font-size: 15px; }
-        #cta-btn { top: 75px; font-size: 20px; } /* Stacked below Help */
+        #cta-btn { top: 75px; font-size: 20px; }
 
         #help-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
@@ -203,83 +202,3 @@
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => {
             setupTarget(index);
-        });
-    });
-
-    startBtn.addEventListener('click', () => {
-        startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        helpBtn.classList.add('visible');
-        ctaBtn.classList.add('visible');
-        isStarted = true;
-        Object.values(videoPool).forEach(v => v.load());
-    });
-
-    const setupTarget = (index) => {
-        const data = COLLECTION_DATA[index];
-        const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-        if (!target) return;
-
-        const plane = target.querySelector('a-plane');
-        let isTargetVisible = false;
-
-        const video = document.createElement('video');
-        video.crossOrigin = "anonymous";
-        video.loop = false;
-        video.preload = "auto";
-        video.setAttribute('playsinline', ''); 
-        video.setAttribute('webkit-playsinline', ''); 
-        video.style.display = 'none';
-        document.body.appendChild(video);
-        
-        videoPool[index] = video;
-
-        video.addEventListener('loadeddata', () => {
-            if (isTargetVisible) {
-                const ratio = video.videoHeight / video.videoWidth;
-                plane.setAttribute('height', ratio);
-                plane.setAttribute('material', {src: video, shader: 'flat'});
-                plane.setAttribute('visible', true);
-                video.play().catch(e => console.log("Play error:", e));
-            }
-        });
-
-        target.addEventListener('targetFound', () => {
-            if (!isStarted) return; 
-            isTargetVisible = true;
-            overlay.classList.remove('visible'); 
-            helpBtn.classList.remove('visible');
-            ctaBtn.classList.remove('visible'); // HIDE CTA
-            hideHelp(); 
-
-            const rand = Math.floor(Math.random() * data.count) + 1;
-            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
-            video.load(); 
-        });
-
-        target.addEventListener('targetLost', () => {
-            isTargetVisible = false;
-            plane.setAttribute('visible', false);
-            if (isStarted) {
-                overlay.classList.add('visible'); 
-                helpBtn.classList.add('visible');
-                ctaBtn.classList.add('visible'); // SHOW CTA
-            }
-            video.pause();
-        });
-    };
-
-    helpBtn.addEventListener('click', () => {
-        if (helpMessage.classList.contains('visible')) hideHelp();
-        else {
-            helpMessage.classList.add('visible');
-            clearTimeout(helpTimer); 
-            helpTimer = setTimeout(hideHelp, 12000);
-        }
-    });
-
-    // Tap help message to close it
-    helpMessage.addEventListener('click', hideHelp);
-    </script>
-</body>
-</html>
