@@ -83,7 +83,13 @@
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
         #help-btn { top: 20px; font-family: 'Press Start 2P', cursive; font-size: 15px; }
-        #cta-btn { top: 75px; font-size: 20px; } /* Stacked below Help */
+        #cta-btn { top: 75px; 
+    		/* Link to your blank logo */
+    		background-image: url('assets/scanfreakblanklogo.png'); 
+   		 background-size: 70%; /* Adjust this % to make the logo smaller/larger inside the square */
+    		background-repeat: no-repeat;
+   		 background-position: center;
+} /* Stacked below Help */
 
         #help-message { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
