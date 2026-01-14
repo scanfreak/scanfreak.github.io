@@ -183,6 +183,7 @@
         clearTimeout(helpTimer);
     };
 
+    // Camera/MindAR logic
     sceneEl.addEventListener("arError", (event) => {
         loadingContainer.style.display = 'none';
         startScreen.style.display = 'none';
@@ -199,6 +200,87 @@
         }, 3000);
     });
 
+    // Start-up sequence
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => {
-            setupTarget(index);
+            setupTarget(parseInt(index));
+        });
+    });
+
+    startBtn.addEventListener('click', () => {
+        startScreen.classList.add('hidden');
+        overlay.classList.add('visible'); 
+        helpBtn.classList.add('visible');
+        ctaBtn.classList.add('visible');
+        isStarted = true;
+        Object.values(videoPool).forEach(v => v.load());
+    });
+
+    const setupTarget = (index) => {
+        const data = COLLECTION_DATA[index];
+        const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
+        if (!target) return;
+
+        const plane = target.querySelector('a-plane');
+        let isTargetVisible = false;
+
+        const video = document.createElement('video');
+        video.crossOrigin = "anonymous";
+        video.loop = false;
+        video.preload = "auto";
+        video.setAttribute('playsinline', ''); 
+        video.setAttribute('webkit-playsinline', ''); 
+        video.style.display = 'none';
+        document.body.appendChild(video);
+        
+        videoPool[index] = video;
+
+        video.addEventListener('loadeddata', () => {
+            if (isTargetVisible) {
+                const ratio = video.videoHeight / video.videoWidth;
+                plane.setAttribute('height', ratio);
+                plane.setAttribute('material', {src: video, shader: 'flat'});
+                plane.setAttribute('visible', true);
+                video.play().catch(e => console.log("Play error:", e));
+            }
+        });
+
+        target.addEventListener('targetFound', () => {
+            if (!isStarted) return; 
+            isTargetVisible = true;
+            overlay.classList.remove('visible'); 
+            helpBtn.classList.remove('visible');
+            ctaBtn.classList.remove('visible');
+            hideHelp(); 
+
+            const rand = Math.floor(Math.random() * data.count) + 1;
+            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
+            video.load(); 
+        });
+
+        target.addEventListener('targetLost', () => {
+            isTargetVisible = false;
+            plane.setAttribute('visible', false);
+            if (isStarted) {
+                overlay.classList.add('visible'); 
+                helpBtn.classList.add('visible');
+                ctaBtn.classList.add('visible');
+            }
+            video.pause();
+        });
+    };
+
+    helpBtn.addEventListener('click', () => {
+        if (helpMessage.classList.contains('visible')) {
+            hideHelp();
+        } else {
+            helpMessage.classList.add('visible');
+            clearTimeout(helpTimer); 
+            helpTimer = setTimeout(hideHelp, 12000);
+        }
+    });
+
+    helpMessage.addEventListener('click', hideHelp);
+    </script>
+</body>
+</html>
