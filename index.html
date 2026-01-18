@@ -71,21 +71,22 @@
         #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
 
+        /* BUTTON UI STYLES - REDUCED TO 80% (36px) */
         .btn-ui {
-            position: absolute; width: 45px; height: 45px;
+            position: absolute; width: 36px; height: 36px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
-            border-radius: 12px; display: flex; justify-content: center; align-items: center;
+            border-radius: 10px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
             opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden;
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
         /* TOP NAVIGATION */
-        #help-btn { top: 20px; right: 20px; font-family: 'Press Start 2P', cursive; font-size: 15px; }
-        #share-btn { top: 20px; right: 75px; } /* To the left of Help */
+        #help-btn { top: 15px; right: 15px; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        #share-btn { top: 15px; right: 60px; } 
         
         /* SIDE NAVIGATION */
-        #cta-btn { top: 75px; right: 20px; } 
+        #cta-btn { top: 60px; right: 15px; } 
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
@@ -188,7 +189,7 @@
 
     let isStarted = false; 
     let helpTimer;
-    let currentTargetName = "wizard"; // Fallback
+    let currentTargetName = "wizard"; 
     const videoPool = {}; 
 
     const hideHelp = () => {
@@ -245,7 +246,7 @@
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
             isTargetVisible = true;
-            currentTargetName = data.name; // Track active target
+            currentTargetName = data.name; 
             overlay.classList.remove('visible'); 
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
             hideHelp(); 
@@ -265,14 +266,12 @@
         });
     };
 
-    // SHARE LOGIC WITH IMAGE ATTACHMENT
     shareBtn.addEventListener('click', async () => {
         const shareText = "Got my hands on some wild merch. It’s freakin’ on another level — it literally comes alive! You've got to experience this immersive AR for yourself 👀";
         const shareUrl = "https://scanfreak.myshopify.com";
         const imagePath = `assets/${currentTargetName}_share.png`;
 
         try {
-            // Attempt to fetch the image to share it as a file
             const response = await fetch(imagePath);
             const blob = await response.blob();
             const file = new File([blob], `${currentTargetName}_share.png`, { type: blob.type });
@@ -285,13 +284,11 @@
                     url: shareUrl
                 });
             } else if (navigator.share) {
-                // Fallback for browsers that share text/url but not files
                 await navigator.share({ title: 'SCANFREAK AR', text: shareText, url: shareUrl });
             } else {
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${shareUrl}`, '_blank');
             }
         } catch (err) {
-            // Ultimate fallback if file fetch fails
             if (navigator.share) await navigator.share({ title: 'SCANFREAK AR', text: shareText, url: shareUrl });
         }
     });
