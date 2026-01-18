@@ -71,9 +71,9 @@
         #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
 
-        /* BUTTON UI STYLES - REDUCED TO 80% (36px) */
+        /* BUTTON UI STYLES - 80% Size (36px) */
         .btn-ui {
-            position: absolute; width: 36px; height: 36px;
+            position: absolute; width: 36px; height: 36px; right: 15px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
@@ -81,12 +81,10 @@
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
-        /* TOP NAVIGATION */
-        #help-btn { top: 15px; right: 15px; font-family: 'Press Start 2P', cursive; font-size: 12px; }
-        #share-btn { top: 15px; right: 60px; } 
-        
-        /* SIDE NAVIGATION */
-        #cta-btn { top: 60px; right: 15px; } 
+        /* VERTICAL STACK ON THE RIGHT */
+        #help-btn { top: 15px; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        #cta-btn { top: 60px; } 
+        #share-btn { top: 105px; } 
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
@@ -125,13 +123,13 @@
 
     <div id="help-btn" class="btn-ui">?</div>
     
-    <div id="share-btn" class="btn-ui">
-        <img src="assets/shareicon.png" class="ui-icon" alt="Share">
-    </div>
-
     <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank">
         <img src="assets/storeicon.png" class="ui-icon" alt="Shop">
     </a>
+
+    <div id="share-btn" class="btn-ui">
+        <img src="assets/shareicon.png" class="ui-icon" alt="Share">
+    </div>
 
     <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     <div id="overlay">Point camera at the SCANFREAK design!</div>
