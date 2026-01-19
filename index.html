@@ -21,35 +21,21 @@
             background: rgba(0, 0, 0, 0.9);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 30; transition: opacity 0.5s, visibility 0.5s;
-            user-select: none; /* Prevents the blue highlight/selection */
+            user-select: none;
         }
 
-        /* This class completely removes the start screen from being clickable */
         #start-screen.hidden { 
             opacity: 0; 
             visibility: hidden; 
             pointer-events: none; 
         }
 
-        #loading-container {
-            width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1);
-            margin-top: 20px; border-radius: 10px; position: relative;
-            overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        #loading-bar {
-            width: 40%; height: 100%; background: #ffffff;
-            position: absolute; left: -40%; border-radius: 10px;
-            animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
-        }
-
-        @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
-
+        /* LOGO POSITIONING - Fixed height to prevent dropping */
         .logo-wrapper {
             position: relative; overflow: hidden;
             display: flex; justify-content: center; align-items: center;
             width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
-            margin-bottom: 20px;
+            margin-bottom: 40px; /* Space reserved for loading/button */
         }
 
         .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; opacity: 1; }
@@ -65,7 +51,24 @@
         @keyframes sweep { 100% { top: 100%; left: 100%; } }
         @keyframes fadeOut { 0%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95); } }
 
+        /* LOADING BAR - Positioned absolutely so it doesn't affect logo flow */
+        #loading-container {
+            position: absolute; bottom: 30%; /* Fixed height from bottom */
+            width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #loading-bar {
+            width: 40%; height: 100%; background: #ffffff;
+            position: absolute; left: -40%; border-radius: 10px;
+            animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
+        }
+
+        @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
+
+        /* START BUTTON - Replaces loading bar at the same visual height */
         #start-btn {
+            position: absolute; bottom: 27%; /* Matches the visual height of loading container */
             font-family: 'Press Start 2P', cursive; padding: 15px 15px; font-size: 15px; color: black;
             background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer;
             text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none;
@@ -173,13 +176,15 @@
     const sceneEl = document.querySelector('a-scene');
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
+    const loadingContainer = document.getElementById('loading-container');
+    const logoContainer = document.getElementById('logo-container');
+    const mainLogo = document.getElementById('main-logo');
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
     const shareBtn = document.getElementById('share-btn');
     const helpMessage = document.getElementById('help-message');
 
-    // Audio References
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
     const sfxHelp = document.getElementById('sfx-help');
@@ -190,7 +195,6 @@
     let currentTargetName = "wizard";
     const videoPool = {}; 
 
-    // Target Setup Logic
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
@@ -238,26 +242,20 @@
         });
     };
 
-    // Initialize Targets
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index));
     });
 
-    // Start Button Logic
     startBtn.addEventListener('click', () => {
         sfxStart.play();
         setTimeout(() => sfxStartup.play(), 2000);
-
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
         [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
-        
-        // Final pre-load of all videos in the pool for iOS performance
         Object.values(videoPool).forEach(v => v.load());
     });
 
-    // Button Event Listeners
     helpBtn.addEventListener('click', () => {
         sfxHelp.play();
         helpMessage.classList.toggle('visible');
@@ -278,11 +276,11 @@
     helpMessage.addEventListener('click', () => helpMessage.classList.remove('visible'));
 
     sceneEl.addEventListener("arReady", () => {
-        document.getElementById('loading-container').style.display = 'none'; 
-        document.getElementById('logo-container').classList.add('animate-sweep');
-        document.getElementById('main-logo').classList.add('animate-logo');
+        loadingContainer.style.display = 'none'; 
+        logoContainer.classList.add('animate-sweep');
+        mainLogo.classList.add('animate-logo');
         setTimeout(() => {
-            document.getElementById('logo-container').style.display = 'none'; 
+            logoContainer.style.display = 'none'; 
             startBtn.classList.add('visible');   
         }, 3000);
     });
