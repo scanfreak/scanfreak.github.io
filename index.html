@@ -103,6 +103,7 @@
             font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
             border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; cursor: pointer;
+            user-select: none; /* Prevents text highlighting */
         }
         #help-message.visible { opacity: 1; pointer-events: auto; }
     </style>
@@ -142,7 +143,6 @@
         </a-assets>
 
         <script>
-            // Generate entities dynamically to keep body clean
             for(let i=0; i<=11; i++) {
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
@@ -187,14 +187,11 @@
 
     let isStarted = false;
     const videoPool = {}; 
-    
-    // ZOOM LOGIC VARIABLES
     let currentScale = 1;
     let initialDist = 0;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // Pinch Gesture Handling
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
@@ -206,9 +203,7 @@
             const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             const delta = dist / initialDist;
             initialDist = dist;
-            
-            currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3.0); // Limit zoom between 0.5x and 3x
-            
+            currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3.0);
             document.querySelectorAll('.ar-plane').forEach(plane => {
                 plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
             });
@@ -253,11 +248,8 @@
         target.addEventListener('targetLost', () => {
             isTargetVisible = false;
             plane.setAttribute('visible', false);
-            
-            // RESET ZOOM ON LOST
             currentScale = 1;
             plane.setAttribute('scale', '1 1 1');
-
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
@@ -281,7 +273,17 @@
         Object.values(videoPool).forEach(v => v.load());
     });
 
-    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); helpMessage.classList.toggle('visible'); });
+    helpBtn.addEventListener('click', () => { 
+        triggerHaptic(); 
+        sfxHelp.play(); 
+        helpMessage.classList.toggle('visible'); 
+    });
+
+    // Make help message disappear when clicked
+    helpMessage.addEventListener('click', () => {
+        helpMessage.classList.remove('visible');
+    });
+
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
