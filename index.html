@@ -79,7 +79,15 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
+        /* Updated Overlay: width is now uniform around the text */
+        #overlay { 
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: max-content; max-width: 85%; padding: 12px 20px; text-align: center; 
+            color: white; font-size: 18px; font-family: Arial, sans-serif; 
+            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); 
+            border-radius: 12px; z-index: 10; transition: opacity 0.5s; 
+            pointer-events: none; opacity: 0; 
+        }
         #overlay.visible { opacity: 1; }
 
         .btn-ui {
@@ -103,7 +111,7 @@
             font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
             border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; cursor: pointer;
-            user-select: none;
+            user-select: none; 
         }
         #help-message.visible { opacity: 1; pointer-events: auto; }
     </style>
@@ -186,6 +194,7 @@
     const sfxShare = document.getElementById('sfx-share');
 
     let isStarted = false;
+    let helpTimeout;
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
@@ -239,6 +248,8 @@
             if (!isStarted) return; 
             isTargetVisible = true;
             overlay.classList.remove('visible'); 
+            helpMessage.classList.remove('visible'); // Added: Close help on target found
+            clearTimeout(helpTimeout);
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -276,19 +287,25 @@
     helpBtn.addEventListener('click', () => { 
         triggerHaptic(); 
         sfxHelp.play(); 
-        helpMessage.classList.toggle('visible'); 
+        const isNowVisible = helpMessage.classList.toggle('visible'); 
+        
+        clearTimeout(helpTimeout);
+        if(isNowVisible) {
+            helpTimeout = setTimeout(() => { helpMessage.classList.remove('visible'); }, 10000);
+        }
     });
 
     helpMessage.addEventListener('click', () => {
         helpMessage.classList.remove('visible');
+        clearTimeout(helpTimeout);
     });
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
-    // Fixed Share Sound Trigger
     shareBtn.addEventListener('click', async () => {
-        sfxShare.play(); // Play immediately on click
         triggerHaptic();
+        sfxShare.currentTime = 0; // Reset audio
+        sfxShare.play(); // Fixed: Ensure SFX plays
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -296,9 +313,7 @@
                     text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
                     url: 'https://scanfreak.myshopify.com'
                 });
-            } catch (err) {
-                console.log("Share cancelled or failed");
-            }
+            } catch (err) { console.log("Share failed", err); }
         }
     });
 
