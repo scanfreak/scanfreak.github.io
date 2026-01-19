@@ -60,18 +60,26 @@
 
         @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
 
+        /* START BUTTON - Shifted up by reducing margin and adjusting transform */
         #start-btn {
             font-family: 'Press Start 2P', cursive; padding: 15px 15px; font-size: 15px; color: black;
             background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer;
             text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none;
             transition: opacity 0.8s ease-in; 
-            position: absolute; /* Keeps it in the middle relative to logo */
-            margin-top: 40px; /* Positions it below the logo space */
+            position: absolute; 
+            margin-top: 30px; /* Reduced from 60px to bring it closer to logo */
         }
 
         #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
-        @keyframes pulseBtn { 0% { transform: scale(1); } 50% { transform: scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 100% { transform: scale(1); } }
-        #start-btn:active { transform: translate(4px, 4px); box-shadow: none; }
+        
+        /* Pulse now includes the -50% Y shift to keep it perfectly centered while moving up */
+        @keyframes pulseBtn { 
+            0% { transform: translateY(-50%) scale(1); } 
+            50% { transform: translateY(-50%) scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 
+            100% { transform: translateY(-50%) scale(1); } 
+        }
+        
+        #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
         #overlay { position: absolute; bottom: 20px; left: 0; right: 0; padding: 20px; text-align: center; color: white; font-size: 24px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.4); border-radius: 15px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; }
         #overlay.visible { opacity: 1; }
@@ -260,7 +268,6 @@
     });
 
     sceneEl.addEventListener("arReady", () => {
-        // Change: Use visibility hidden instead of display none to keep space intact
         loadingContainer.style.visibility = 'hidden'; 
         logoContainer.classList.add('animate-sweep');
         mainLogo.classList.add('animate-logo');
