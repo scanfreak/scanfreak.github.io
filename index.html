@@ -103,7 +103,7 @@
             font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
             border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; cursor: pointer;
-            user-select: none; /* Prevents text highlighting */
+            user-select: none;
         }
         #help-message.visible { opacity: 1; pointer-events: auto; }
     </style>
@@ -279,20 +279,27 @@
         helpMessage.classList.toggle('visible'); 
     });
 
-    // Make help message disappear when clicked
     helpMessage.addEventListener('click', () => {
         helpMessage.classList.remove('visible');
     });
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
+    
+    // Fixed Share Sound Trigger
     shareBtn.addEventListener('click', async () => {
+        sfxShare.play(); // Play immediately on click
         triggerHaptic();
-        sfxShare.play();
-        if (navigator.share) await navigator.share({
-            title: 'SCANFREAK AR',
-            text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-            url: 'https://scanfreak.myshopify.com'
-        });
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'SCANFREAK AR',
+                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
+                    url: 'https://scanfreak.myshopify.com'
+                });
+            } catch (err) {
+                console.log("Share cancelled or failed");
+            }
+        }
     });
 
     sceneEl.addEventListener("arReady", () => {
