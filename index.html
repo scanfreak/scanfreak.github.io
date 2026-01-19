@@ -81,7 +81,6 @@
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
-        /* VERTICAL STACK ON THE RIGHT */
         #help-btn { top: 15px; font-family: 'Press Start 2P', cursive; font-size: 12px; }
         #cta-btn { top: 60px; } 
         #share-btn { top: 105px; } 
@@ -96,22 +95,9 @@
             opacity: 0; pointer-events: none; cursor: pointer;
         }
         #help-message.visible { opacity: 1; pointer-events: auto; }
-
-        #error-screen {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(139, 0, 0, 0.95); color: white;
-            display: none; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 100; text-align: center; padding: 20px; font-family: Arial, sans-serif;
-        }
     </style>
 </head>
 <body>
-
-    <div id="error-screen">
-        <h2 style="font-family: 'Press Start 2P', cursive; font-size: 18px;">CAMERA BLOCKED</h2>
-        <p>Please click the camera/lock icon in your browser's address bar to allow access, then refresh the page.</p>
-        <button onclick="location.reload()" style="padding:10px; cursor:pointer;">RELOAD PAGE</button>
-    </div>
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
@@ -135,171 +121,104 @@
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene id="ar-scene"
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
-        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind;" 
+        color-space="sRGB" renderer="colorManagement: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
-        <a-assets></a-assets>
-
-        <a-entity mindar-image-target="targetIndex: 0"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 1"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 2"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 3"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 4"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 5"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 6"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 7"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 8"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 9"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 10"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>
-        <a-entity mindar-image-target="targetIndex: 11"><a-plane visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-entity>
+        <a-assets>
+            <audio id="sfx-start" src="assets/sfx/start.mp3" preload="auto"></audio>
+            <audio id="sfx-startup" src="assets/sfx/startup.mp3" preload="auto"></audio>
+            <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
+            <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
+            <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
+        </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
-    const COLLECTION_DATA = {
-        0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
-        1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
-        2: { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
-        3: { name: 'witch1', prefix: 'wit1', count: 6, folder: 'witch1' },
-        4: { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
-        5: { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' },
-        6: { name: 'seer', prefix: 'see', count: 20, folder: 'seer' },
-        7: { name: 'portal', prefix: 'por', count: 20, folder: 'portal' },
-        8: { name: 'nostradamus', prefix: 'nos', count: 20, folder: 'nostradamus' },
-        9: { name: 'mystic', prefix: 'mys', count: 20, folder: 'mystic' },
-        10: { name: 'mermaid', prefix: 'mer', count: 20, folder: 'mermaid' },
-        11: { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
-    };
+    // Audio References
+    const sfxStart = document.getElementById('sfx-start');
+    const sfxStartup = document.getElementById('sfx-startup');
+    const sfxHelp = document.getElementById('sfx-help');
+    const sfxStore = document.getElementById('sfx-store');
+    const sfxShare = document.getElementById('sfx-share');
 
-    const sceneEl = document.querySelector('a-scene');
-    const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
-    const loadingContainer = document.getElementById('loading-container');
-    const logoContainer = document.getElementById('logo-container');
-    const mainLogo = document.getElementById('main-logo');
-    const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
     const shareBtn = document.getElementById('share-btn');
     const helpMessage = document.getElementById('help-message');
+    const startScreen = document.getElementById('start-screen');
 
-    let isStarted = false; 
-    let helpTimer;
-    let currentTargetName = "wizard"; 
-    const videoPool = {}; 
+    let isStarted = false;
 
-    const hideHelp = () => {
-        helpMessage.classList.remove('visible');
-        clearTimeout(helpTimer);
-    };
+    // START BUTTON LOGIC
+    startBtn.addEventListener('click', () => {
+        // Unlock & Play Start Sound
+        sfxStart.play();
 
-    sceneEl.addEventListener("arReady", () => {
-        loadingContainer.style.display = 'none'; 
-        logoContainer.classList.add('animate-sweep');
-        mainLogo.classList.add('animate-logo');
+        // Delayed Startup Sound (1s after start finish, approx 2s total)
         setTimeout(() => {
-            logoContainer.style.display = 'none'; 
+            sfxStartup.play();
+        }, 2000);
+
+        // UI transitions
+        startScreen.classList.add('hidden');
+        document.getElementById('overlay').classList.add('visible'); 
+        [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
+        isStarted = true;
+    });
+
+    // HELP BUTTON LOGIC
+    helpBtn.addEventListener('click', () => {
+        sfxHelp.play();
+        if (helpMessage.classList.contains('visible')) {
+            helpMessage.classList.remove('visible');
+        } else {
+            helpMessage.classList.add('visible');
+        }
+    });
+
+    // STORE BUTTON LOGIC
+    ctaBtn.addEventListener('click', () => {
+        sfxStore.play();
+    });
+
+    // SHARE BUTTON LOGIC
+    shareBtn.addEventListener('click', async () => {
+        sfxShare.play();
+        
+        const shareData = {
+            title: 'SCANFREAK AR',
+            text: "Got my hands on some wild merch. It’s freakin’ on another level — it literally comes alive! You've got to experience this immersive AR for yourself 👀",
+            url: 'https://scanfreak.myshopify.com'
+        };
+
+        try {
+            if (navigator.share) {
+                await navigator.share(shareData);
+            } else {
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareData.text)}&url=${shareData.url}`, '_blank');
+            }
+        } catch (err) {
+            console.log("Share failed", err);
+        }
+    });
+
+    // Close help on click
+    helpMessage.addEventListener('click', () => helpMessage.classList.remove('visible'));
+
+    // AR Start Ready Logic
+    document.querySelector('a-scene').addEventListener("arReady", () => {
+        document.getElementById('loading-container').style.display = 'none'; 
+        document.getElementById('logo-container').classList.add('animate-sweep');
+        document.getElementById('main-logo').classList.add('animate-logo');
+        setTimeout(() => {
+            document.getElementById('logo-container').style.display = 'none'; 
             startBtn.classList.add('visible');   
         }, 3000);
     });
-
-    window.addEventListener('load', () => {
-        Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index));
-    });
-
-    startBtn.addEventListener('click', () => {
-        startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
-        isStarted = true;
-        Object.values(videoPool).forEach(v => v.load());
-    });
-
-    const setupTarget = (index) => {
-        const data = COLLECTION_DATA[index];
-        const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-        if (!target) return;
-        const plane = target.querySelector('a-plane');
-        let isTargetVisible = false;
-
-        const video = document.createElement('video');
-        video.crossOrigin = "anonymous";
-        video.loop = false; video.preload = "auto";
-        video.setAttribute('playsinline', ''); 
-        video.style.display = 'none';
-        document.body.appendChild(video);
-        videoPool[index] = video;
-
-        video.addEventListener('loadeddata', () => {
-            if (isTargetVisible) {
-                plane.setAttribute('height', video.videoHeight / video.videoWidth);
-                plane.setAttribute('material', {src: video, shader: 'flat'});
-                plane.setAttribute('visible', true);
-                video.play().catch(e => console.log(e));
-            }
-        });
-
-        target.addEventListener('targetFound', () => {
-            if (!isStarted) return; 
-            isTargetVisible = true;
-            currentTargetName = data.name; 
-            overlay.classList.remove('visible'); 
-            [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
-            hideHelp(); 
-            const rand = Math.floor(Math.random() * data.count) + 1;
-            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
-            video.load(); 
-        });
-
-        target.addEventListener('targetLost', () => {
-            isTargetVisible = false;
-            plane.setAttribute('visible', false);
-            if (isStarted) {
-                overlay.classList.add('visible'); 
-                [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
-            }
-            video.pause();
-        });
-    };
-
-    shareBtn.addEventListener('click', async () => {
-        const shareText = "Got my hands on some wild merch. It’s freakin’ on another level — it literally comes alive! You've got to experience this immersive AR for yourself 👀";
-        const shareUrl = "https://scanfreak.myshopify.com";
-        const imagePath = `assets/${currentTargetName}_share.png`;
-
-        try {
-            const response = await fetch(imagePath);
-            const blob = await response.blob();
-            const file = new File([blob], `${currentTargetName}_share.png`, { type: blob.type });
-
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                await navigator.share({
-                    files: [file],
-                    title: 'SCANFREAK AR',
-                    text: shareText,
-                    url: shareUrl
-                });
-            } else if (navigator.share) {
-                await navigator.share({ title: 'SCANFREAK AR', text: shareText, url: shareUrl });
-            } else {
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${shareUrl}`, '_blank');
-            }
-        } catch (err) {
-            if (navigator.share) await navigator.share({ title: 'SCANFREAK AR', text: shareText, url: shareUrl });
-        }
-    });
-
-    helpBtn.addEventListener('click', () => {
-        if (helpMessage.classList.contains('visible')) hideHelp();
-        else {
-            helpMessage.classList.add('visible');
-            clearTimeout(helpTimer); 
-            helpTimer = setTimeout(hideHelp, 12000);
-        }
-    });
-    helpMessage.addEventListener('click', hideHelp);
     </script>
 </body>
 </html>
