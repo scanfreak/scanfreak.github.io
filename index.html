@@ -79,7 +79,6 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        /* Updated Overlay: width is now uniform around the text */
         #overlay { 
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             width: max-content; max-width: 85%; padding: 12px 20px; text-align: center; 
@@ -103,6 +102,11 @@
         #cta-btn { top: 60px; } 
         #share-btn { top: 105px; } 
 
+        #screenshot-btn {
+            left: 50%; bottom: 30px; transform: translateX(-50%);
+            width: 60px; height: 60px; border-radius: 50%;
+        }
+
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
         #help-message { 
@@ -114,9 +118,17 @@
             user-select: none; 
         }
         #help-message.visible { opacity: 1; pointer-events: auto; }
+
+        #flash-effect {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; z-index: 100; pointer-events: none;
+        }
+        @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
 <body>
+
+    <div id="flash-effect"></div>
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
@@ -134,12 +146,16 @@
         <img src="assets/shareicon.png" class="ui-icon" alt="Share">
     </div>
 
+    <div id="screenshot-btn" class="btn-ui">
+        <img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot">
+    </div>
+
     <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene id="ar-scene"
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
-        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true" 
+        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
         <a-assets>
@@ -148,6 +164,7 @@
             <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
             <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
             <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
+            <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
         </a-assets>
 
         <script>
@@ -185,21 +202,46 @@
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
     const shareBtn = document.getElementById('share-btn');
+    const screenshotBtn = document.getElementById('screenshot-btn');
     const helpMessage = document.getElementById('help-message');
+    const flashEffect = document.getElementById('flash-effect');
 
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
     const sfxHelp = document.getElementById('sfx-help');
     const sfxStore = document.getElementById('sfx-store');
     const sfxShare = document.getElementById('sfx-share');
+    const sfxScreenshot = document.getElementById('sfx-screenshot');
 
     let isStarted = false;
     let helpTimeout;
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
+    let lastScannedImageUrl = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
+
+    const captureCanvas = () => {
+        const canvas = sceneEl.components.screenshot.getCanvas('perspective');
+        return canvas.toDataURL('image/png');
+    };
+
+    const handleShare = async (imageUrl, message) => {
+        if (!navigator.share) return;
+        try {
+            const response = await fetch(imageUrl);
+            const blob = await response.blob();
+            const file = new File([blob], 'scanfreak.png', { type: 'image/png' });
+            
+            await navigator.share({
+                title: 'SCANFREAK AR',
+                text: message,
+                url: 'https://scanfreak.myshopify.com',
+                files: [file]
+            });
+        } catch (err) { console.log("Share failed", err); }
+    };
 
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
@@ -248,7 +290,8 @@
             if (!isStarted) return; 
             isTargetVisible = true;
             overlay.classList.remove('visible'); 
-            helpMessage.classList.remove('visible'); // Added: Close help on target found
+            helpMessage.classList.remove('visible');
+            screenshotBtn.classList.add('visible');
             clearTimeout(helpTimeout);
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
             const rand = Math.floor(Math.random() * data.count) + 1;
@@ -261,6 +304,7 @@
             plane.setAttribute('visible', false);
             currentScale = 1;
             plane.setAttribute('scale', '1 1 1');
+            screenshotBtn.classList.remove('visible');
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
@@ -304,17 +348,24 @@
     
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
-        sfxShare.currentTime = 0; // Reset audio
-        sfxShare.play(); // Fixed: Ensure SFX plays
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com'
-                });
-            } catch (err) { console.log("Share failed", err); }
-        }
+        sfxShare.currentTime = 0;
+        sfxShare.play();
+        
+        lastScannedImageUrl = captureCanvas();
+        handleShare(lastScannedImageUrl, "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀");
+    });
+
+    screenshotBtn.addEventListener('click', () => {
+        triggerHaptic();
+        sfxScreenshot.currentTime = 0;
+        sfxScreenshot.play();
+
+        flashEffect.style.animation = 'none';
+        void flashEffect.offsetWidth; 
+        flashEffect.style.animation = 'flashAnim 0.4s ease-out forwards';
+
+        const screenShotUrl = captureCanvas();
+        handleShare(screenShotUrl, "THE FUTURE IS NOW...UPGRADE YOUR REALITY! 👀");
     });
 
     sceneEl.addEventListener("arReady", () => {
