@@ -223,6 +223,7 @@
     let currentScale = 1;
     let initialDist = 0;
     
+    // This now persists the LAST scanned target even after losing track
     let lastFoundTargetIndex = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
@@ -246,7 +247,6 @@
             const delta = dist / initialDist;
             initialDist = dist;
 
-            // Update scale between 0.5x and 3x
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
             const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
             const plane = target.querySelector('a-plane');
@@ -326,7 +326,7 @@
 
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
-            triggerHaptic(); // Haptic feedback on target found
+            triggerHaptic(); 
             isTargetVisible = true;
             lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
@@ -342,15 +342,13 @@
         target.addEventListener('targetLost', () => {
             isTargetVisible = false;
             plane.setAttribute('visible', false);
-            currentScale = 1;
-            plane.setAttribute('scale', '1 1 1');
             screenshotBtn.classList.remove('visible'); 
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
-            if(lastFoundTargetIndex === index) lastFoundTargetIndex = null;
+            // REMOVED: lastFoundTargetIndex = null; (This fixes the share button)
         });
     };
 
@@ -386,6 +384,7 @@
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
+    // --- FIXED SHARE BUTTON LOGIC ---
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
         sfxShare.currentTime = 0;
@@ -406,6 +405,7 @@
         if (navigator.share) {
             try {
                 const response = await fetch(shareImagePath);
+                if (!response.ok) throw new Error('File not found');
                 const blob = await response.blob();
                 const file = new File([blob], shareFileName, { type: 'image/png' });
 
@@ -418,7 +418,7 @@
 
                 await navigator.share(shareData);
             } catch (err) { 
-                console.log("Share failed", err);
+                console.log("Share failed or file missing, falling back to text", err);
                 navigator.share({
                     title: 'SCANFREAK AR',
                     text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
