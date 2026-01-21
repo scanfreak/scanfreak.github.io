@@ -103,8 +103,8 @@
         #share-btn { top: 105px; } 
 
         #screenshot-btn {
-            left: 50%; bottom: 30px; transform: translateX(-50%);
-            width: 60px; height: 60px; border-radius: 50%;
+            bottom: 20px; left: 50%; right: auto; transform: translateX(-50%);
+            width: 50px; height: 50px; border-radius: 12px;
         }
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
@@ -119,16 +119,17 @@
         }
         #help-message.visible { opacity: 1; pointer-events: auto; }
 
-        #flash-effect {
+        #flash {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; opacity: 0; z-index: 100; pointer-events: none;
         }
-        @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+        .flash-active { animation: flashAnim 0.4s ease-out; }
+        @keyframes flashAnim { 0% { opacity: 0.9; } 100% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <div id="flash-effect"></div>
+    <div id="flash"></div>
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
@@ -145,7 +146,6 @@
     <div id="share-btn" class="btn-ui">
         <img src="assets/shareicon.png" class="ui-icon" alt="Share">
     </div>
-
     <div id="screenshot-btn" class="btn-ui">
         <img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot">
     </div>
@@ -204,7 +204,7 @@
     const shareBtn = document.getElementById('share-btn');
     const screenshotBtn = document.getElementById('screenshot-btn');
     const helpMessage = document.getElementById('help-message');
-    const flashEffect = document.getElementById('flash-effect');
+    const flashEl = document.getElementById('flash');
 
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
@@ -218,29 +218,30 @@
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
-    let lastScannedImageUrl = null;
+    let lastActiveVideo = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    const captureCanvas = () => {
-        const canvas = sceneEl.components.screenshot.getCanvas('perspective');
-        return canvas.toDataURL('image/png');
-    };
+    const captureFrame = async () => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        const video = document.querySelector('video'); // MindAR video feed
+        const arCanvas = sceneEl.canvas;
 
-    const handleShare = async (imageUrl, message) => {
-        if (!navigator.share) return;
-        try {
-            const response = await fetch(imageUrl);
-            const blob = await response.blob();
-            const file = new File([blob], 'scanfreak.png', { type: 'image/png' });
-            
-            await navigator.share({
-                title: 'SCANFREAK AR',
-                text: message,
-                url: 'https://scanfreak.myshopify.com',
-                files: [file]
-            });
-        } catch (err) { console.log("Share failed", err); }
+        canvas.width = arCanvas.width;
+        canvas.height = arCanvas.height;
+
+        // Draw camera feed
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        // Draw AR content
+        context.drawImage(arCanvas, 0, 0, canvas.width, canvas.height);
+
+        return new Promise(resolve => {
+            canvas.toBlob(blob => {
+                const file = new File([blob], "scanfreak-capture.png", { type: "image/png" });
+                resolve(file);
+            }, 'image/png');
+        });
     };
 
     window.addEventListener('touchstart', (e) => {
@@ -289,11 +290,13 @@
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
             isTargetVisible = true;
+            lastActiveVideo = video;
             overlay.classList.remove('visible'); 
             helpMessage.classList.remove('visible');
-            screenshotBtn.classList.add('visible');
             clearTimeout(helpTimeout);
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
+            screenshotBtn.classList.add('visible');
+            
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load(); 
@@ -351,21 +354,49 @@
         sfxShare.currentTime = 0;
         sfxShare.play();
         
-        lastScannedImageUrl = captureCanvas();
-        handleShare(lastScannedImageUrl, "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀");
+        if (navigator.share) {
+            try {
+                const shareData = {
+                    title: 'SCANFREAK AR',
+                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
+                    url: 'https://scanfreak.myshopify.com'
+                };
+
+                const file = await captureFrame();
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    shareData.files = [file];
+                }
+
+                await navigator.share(shareData);
+            } catch (err) { console.log("Share failed", err); }
+        }
     });
 
-    screenshotBtn.addEventListener('click', () => {
+    screenshotBtn.addEventListener('click', async () => {
         triggerHaptic();
         sfxScreenshot.currentTime = 0;
         sfxScreenshot.play();
 
-        flashEffect.style.animation = 'none';
-        void flashEffect.offsetWidth; 
-        flashEffect.style.animation = 'flashAnim 0.4s ease-out forwards';
+        flashEl.classList.remove('flash-active');
+        void flashEl.offsetWidth; // Force reflow
+        flashEl.classList.add('flash-active');
 
-        const screenShotUrl = captureCanvas();
-        handleShare(screenShotUrl, "THE FUTURE IS NOW...UPGRADE YOUR REALITY! 👀");
+        if (navigator.share) {
+            try {
+                const file = await captureFrame();
+                const shareData = {
+                    title: 'SCANFREAK AR',
+                    text: "The future is now - level up your reality or become obsolete! 👀",
+                    url: 'https://scanfreak.myshopify.com'
+                };
+
+                if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    shareData.files = [file];
+                }
+
+                await navigator.share(shareData);
+            } catch (err) { console.log("Screenshot share failed", err); }
+        }
     });
 
     sceneEl.addEventListener("arReady", () => {
