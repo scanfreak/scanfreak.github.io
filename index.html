@@ -157,7 +157,7 @@
     <div id="overlay">Point camera at the SCANFREAK design!</div>
 
     <a-scene id="ar-scene"
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.001; filterBeta: 1000;" 
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5" 
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true, antialias: true, alpha: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
@@ -223,10 +223,38 @@
     let currentScale = 1;
     let initialDist = 0;
     
-    // Track the last target found
     let lastFoundTargetIndex = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
+
+    // --- PINCH ZOOM LOGIC ---
+    window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            initialDist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+        }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
+            const dist = Math.hypot(
+                e.touches[0].pageX - e.touches[1].pageX,
+                e.touches[0].pageY - e.touches[1].pageY
+            );
+            const delta = dist / initialDist;
+            initialDist = dist;
+
+            // Update scale between 0.5x and 3x
+            currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
+            const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
+            const plane = target.querySelector('a-plane');
+            if (plane) {
+                plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+            }
+        }
+    });
 
     const captureFullImage = async () => {
         return new Promise((resolve) => {
@@ -298,6 +326,7 @@
 
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
+            triggerHaptic(); // Haptic feedback on target found
             isTargetVisible = true;
             lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
@@ -321,6 +350,7 @@
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
+            if(lastFoundTargetIndex === index) lastFoundTargetIndex = null;
         });
     };
 
@@ -356,7 +386,6 @@
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
-    // Updated Share Button with Default Logo Logic
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
         sfxShare.currentTime = 0;
@@ -365,7 +394,6 @@
         let shareImagePath;
         let shareFileName;
 
-        // Logic to determine which image to share
         if (lastFoundTargetIndex !== null) {
             const data = COLLECTION_DATA[lastFoundTargetIndex];
             shareImagePath = `assets/share/${data.name}_share.png`;
