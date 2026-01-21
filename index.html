@@ -225,9 +225,19 @@
 
     const captureFullImage = async () => {
         return new Promise((resolve) => {
-            // Wait for the next frame render to ensure the buffer is populated
+            // Use requestAnimationFrame to ensure the WebGL buffer is ready
             requestAnimationFrame(() => {
-                const videoFeed = document.querySelector('video');
+                // MINDAR usually creates a video element for the camera feed
+                // We find the video that is NOT one of our hidden AR video assets
+                const allVideos = document.querySelectorAll('video');
+                let cameraVideo = null;
+                allVideos.forEach(v => {
+                    // Camera feed is the one added by MindAR, usually visible but styled out of view or behind
+                    if (v.style.position === 'absolute' || (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))) {
+                        cameraVideo = v;
+                    }
+                });
+
                 const arCanvas = sceneEl.canvas;
                 const outputCanvas = document.createElement('canvas');
                 const ctx = outputCanvas.getContext('2d');
@@ -235,10 +245,32 @@
                 outputCanvas.width = arCanvas.width;
                 outputCanvas.height = arCanvas.height;
 
-                // 1. Draw Camera Feed
-                ctx.drawImage(videoFeed, 0, 0, outputCanvas.width, outputCanvas.height);
+                // 1. Draw the Camera Feed Background
+                if (cameraVideo) {
+                    // Match the camera feed to the canvas size (cover)
+                    const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
+                    const canvasAspect = outputCanvas.width / outputCanvas.height;
+                    let drawWidth, drawHeight, offsetX, offsetY;
+
+                    if (videoAspect > canvasAspect) {
+                        drawHeight = outputCanvas.height;
+                        drawWidth = drawHeight * videoAspect;
+                        offsetX = -(drawWidth - outputCanvas.width) / 2;
+                        offsetY = 0;
+                    } else {
+                        drawWidth = outputCanvas.width;
+                        drawHeight = drawWidth / videoAspect;
+                        offsetX = 0;
+                        offsetY = -(drawHeight - outputCanvas.height) / 2;
+                    }
+                    ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
+                } else {
+                    // Fallback if camera video not identified
+                    ctx.fillStyle = "black";
+                    ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
+                }
                 
-                // 2. Draw A-Frame Overlay (grabbed directly from WebGL context)
+                // 2. Draw the AR content on top
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
 
                 outputCanvas.toBlob((blob) => {
@@ -378,7 +410,7 @@
         void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
 
-        // Capture after a tiny delay to ensure the UI has updated but the buffer is still fresh
+        // Capture after UI updates
         setTimeout(async () => {
             if (navigator.share) {
                 try {
@@ -392,7 +424,7 @@
                     await navigator.share(shareData);
                 } catch (err) { console.log("Screenshot share failed", err); }
             }
-        }, 100);
+        }, 150);
     });
 
     sceneEl.addEventListener("arReady", () => {
