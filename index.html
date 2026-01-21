@@ -105,7 +105,9 @@
         #screenshot-btn {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 60px; height: 60px; border-radius: 15px; z-index: 20;
+            display: none;
         }
+        #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
@@ -220,19 +222,18 @@
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
+    
+    // Track the last target found
+    let lastFoundTargetIndex = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
     const captureFullImage = async () => {
         return new Promise((resolve) => {
-            // Use requestAnimationFrame to ensure the WebGL buffer is ready
             requestAnimationFrame(() => {
-                // MINDAR usually creates a video element for the camera feed
-                // We find the video that is NOT one of our hidden AR video assets
                 const allVideos = document.querySelectorAll('video');
                 let cameraVideo = null;
                 allVideos.forEach(v => {
-                    // Camera feed is the one added by MindAR, usually visible but styled out of view or behind
                     if (v.style.position === 'absolute' || (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))) {
                         cameraVideo = v;
                     }
@@ -241,17 +242,13 @@
                 const arCanvas = sceneEl.canvas;
                 const outputCanvas = document.createElement('canvas');
                 const ctx = outputCanvas.getContext('2d');
-
                 outputCanvas.width = arCanvas.width;
                 outputCanvas.height = arCanvas.height;
 
-                // 1. Draw the Camera Feed Background
                 if (cameraVideo) {
-                    // Match the camera feed to the canvas size (cover)
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
-
                     if (videoAspect > canvasAspect) {
                         drawHeight = outputCanvas.height;
                         drawWidth = drawHeight * videoAspect;
@@ -264,15 +261,8 @@
                         offsetY = -(drawHeight - outputCanvas.height) / 2;
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
-                } else {
-                    // Fallback if camera video not identified
-                    ctx.fillStyle = "black";
-                    ctx.fillRect(0, 0, outputCanvas.width, outputCanvas.height);
                 }
-                
-                // 2. Draw the AR content on top
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-
                 outputCanvas.toBlob((blob) => {
                     const file = new File([blob], "scanfreak_ar.png", { type: "image/png" });
                     resolve(file);
@@ -280,24 +270,6 @@
             });
         });
     };
-
-    window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        }
-    });
-
-    window.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && isStarted) {
-            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            const delta = dist / initialDist;
-            initialDist = dist;
-            currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3.0);
-            document.querySelectorAll('.ar-plane').forEach(plane => {
-                plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-            });
-        }
-    });
 
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
@@ -327,6 +299,7 @@
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
             isTargetVisible = true;
+            lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
             helpMessage.classList.remove('visible');
             clearTimeout(helpTimeout);
@@ -383,21 +356,47 @@
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
+    // Updated Share Button with Default Logo Logic
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
         sfxShare.currentTime = 0;
         sfxShare.play();
+
+        let shareImagePath;
+        let shareFileName;
+
+        // Logic to determine which image to share
+        if (lastFoundTargetIndex !== null) {
+            const data = COLLECTION_DATA[lastFoundTargetIndex];
+            shareImagePath = `assets/share/${data.name}_share.png`;
+            shareFileName = `${data.name}_share.png`;
+        } else {
+            shareImagePath = `assets/scanfreakblanklogo.png`;
+            shareFileName = `scanfreak_logo.png`;
+        }
+
         if (navigator.share) {
             try {
-                const imageFile = await captureFullImage();
+                const response = await fetch(shareImagePath);
+                const blob = await response.blob();
+                const file = new File([blob], shareFileName, { type: 'image/png' });
+
                 const shareData = {
                     title: 'SCANFREAK AR',
                     text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
                     url: 'https://scanfreak.myshopify.com',
-                    files: [imageFile]
+                    files: [file]
                 };
+
                 await navigator.share(shareData);
-            } catch (err) { console.log("Share failed", err); }
+            } catch (err) { 
+                console.log("Share failed", err);
+                navigator.share({
+                    title: 'SCANFREAK AR',
+                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
+                    url: 'https://scanfreak.myshopify.com'
+                });
+            }
         }
     });
 
@@ -405,12 +404,10 @@
         triggerHaptic();
         sfxScreenshot.currentTime = 0;
         sfxScreenshot.play();
-
         flashOverlay.classList.remove('flash-active');
         void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
 
-        // Capture after UI updates
         setTimeout(async () => {
             if (navigator.share) {
                 try {
