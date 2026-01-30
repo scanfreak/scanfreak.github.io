@@ -96,8 +96,7 @@
         @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
         .btn-ui {
-            position: absolute; width: 36px; height: 36px; 
-            right: 10px; /* Moved 5px right */
+            position: absolute; width: 36px; height: 36px; right: 10px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
@@ -118,6 +117,16 @@
             display: none;
         }
         #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
+
+        /* Zoom Indicator - Bottom Right */
+        #zoom-indicator {
+            position: absolute; bottom: 20px; right: 20px;
+            background: rgba(0,0,0,0.6); color: white; padding: 5px 10px;
+            border-radius: 20px; font-family: 'Press Start 2P', cursive;
+            font-size: 10px; z-index: 21; opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; border: 1px solid rgba(255,255,255,0.3);
+        }
+        #zoom-indicator.visible { opacity: 1; }
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
@@ -143,6 +152,7 @@
 <body>
 
     <div id="flash-overlay"></div>
+    <div id="zoom-indicator">1.0x</div>
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
@@ -182,7 +192,6 @@
         </a-assets>
 
         <script>
-            // Scanner size reduced by 10% (width="0.9")
             for(let i=0; i<=11; i++) {
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="0.9" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
@@ -208,13 +217,10 @@
     };
 
     const sceneEl = document.querySelector('a-scene');
-    const startScreen = document.getElementById('start-screen');
+    const zoomInd = document.getElementById('zoom-indicator');
     const startBtn = document.getElementById('start-btn');
     const overlay = document.getElementById('overlay');
     const helpBtn = document.getElementById('help-btn');
-    const ctaBtn = document.getElementById('cta-btn');
-    const shareBtn = document.getElementById('share-btn');
-    const infoBtn = document.getElementById('info-btn');
     const flashBtn = document.getElementById('flash-btn');
     const cameraBtn = document.getElementById('camera-btn');
     const screenshotBtn = document.getElementById('screenshot-btn');
@@ -227,10 +233,37 @@
     const sfxHelp = document.getElementById('sfx-help'), sfxStore = document.getElementById('sfx-store');
     const sfxShare = document.getElementById('sfx-share'), sfxScreenshot = document.getElementById('sfx-screenshot');
 
-    let isStarted = false, helpTimeout, infoTimeout, flashTimeout, isFlashOn = false, lastFoundTargetIndex = null;
+    let isStarted = false, helpTimeout, infoTimeout, flashTimeout, zoomTimeout, isFlashOn = false, lastFoundTargetIndex = null;
+    let initialDist = 0, currentScale = 1;
     const videoPool = {};
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
+
+    // Restore and fix Zoom
+    window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 2) {
+            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+        }
+    });
+
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            const delta = dist / initialDist;
+            initialDist = dist;
+            currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
+            
+            const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
+            const plane = target.querySelector('a-plane');
+            if (plane) { 
+                plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
+                zoomInd.innerText = currentScale.toFixed(1) + "x";
+                zoomInd.classList.add('visible');
+                clearTimeout(zoomTimeout);
+                zoomTimeout = setTimeout(() => zoomInd.classList.remove('visible'), 1500);
+            }
+        }
+    });
 
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
@@ -258,7 +291,7 @@
             triggerHaptic(); isTargetVisible = true; lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
             [helpMessage, infoMessage, flashMsgBox].forEach(m => m.classList.remove('visible'));
-            [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, cameraBtn].forEach(btn => btn.classList.remove('visible'));
+            [helpBtn, document.getElementById('cta-btn'), document.getElementById('share-btn'), document.getElementById('info-btn'), flashBtn, cameraBtn].forEach(btn => btn.classList.remove('visible'));
             screenshotBtn.classList.add('visible'); 
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -270,7 +303,7 @@
             screenshotBtn.classList.remove('visible'); 
             if (isStarted) {
                 overlay.classList.add('visible'); 
-                [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
+                [helpBtn, document.getElementById('cta-btn'), document.getElementById('share-btn'), document.getElementById('info-btn'), flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
         });
@@ -281,11 +314,40 @@
     startBtn.addEventListener('click', () => {
         triggerHaptic(); sfxStart.play();
         setTimeout(() => sfxStartup.play(), 2000);
-        startScreen.classList.add('hidden');
+        document.getElementById('start-screen').classList.add('hidden');
         overlay.classList.add('visible'); 
-        [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
+        [helpBtn, document.getElementById('cta-btn'), document.getElementById('share-btn'), document.getElementById('info-btn'), flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
+    });
+
+    // Android-Specific Flash Fix
+    flashBtn.addEventListener('click', async () => {
+        triggerHaptic(); sfxStore.play();
+        try {
+            const video = document.querySelector('video[style*="position: absolute"]');
+            if (!video || !video.srcObject) throw new Error();
+            const track = video.srcObject.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) {
+                isFlashOn = !isFlashOn;
+                await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+            } else { throw new Error(); }
+        } catch (e) {
+            flashMsgBox.classList.add('visible');
+            clearTimeout(flashTimeout);
+            flashTimeout = setTimeout(() => flashMsgBox.classList.remove('visible'), 5000);
+        }
+    });
+
+    cameraBtn.addEventListener('click', () => {
+        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
+        const mindarSystem = sceneEl.systems['mindar-image-system'];
+        const currentMode = sceneEl.getAttribute('mindar-image');
+        mindarSystem.stop();
+        const isFront = currentMode.includes('facingMode: user');
+        sceneEl.setAttribute('mindar-image', isFront ? 'facingMode: environment' : 'facingMode: user');
+        setTimeout(() => mindarSystem.start(), 300);
     });
 
     helpBtn.addEventListener('click', () => { 
@@ -296,7 +358,7 @@
         if(isVisible) helpTimeout = setTimeout(() => helpMessage.classList.remove('visible'), 10000);
     });
 
-    infoBtn.addEventListener('click', () => {
+    document.getElementById('info-btn').addEventListener('click', () => {
         triggerHaptic(); sfxHelp.play(); 
         const isVisible = infoMessage.classList.toggle('visible'); 
         helpMessage.classList.remove('visible'); flashMsgBox.classList.remove('visible');
@@ -304,30 +366,11 @@
         if(isVisible) infoTimeout = setTimeout(() => infoMessage.classList.remove('visible'), 10000);
     });
 
-    flashBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxStore.play();
-        const videoTrack = document.querySelector('video').srcObject?.getVideoTracks()[0];
-        if (videoTrack && videoTrack.getCapabilities().torch) {
-            isFlashOn = !isFlashOn;
-            await videoTrack.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-        } else {
-            const isVisible = flashMsgBox.classList.toggle('visible');
-            helpMessage.classList.remove('visible'); infoMessage.classList.remove('visible');
-            clearTimeout(flashTimeout);
-            if(isVisible) flashTimeout = setTimeout(() => flashMsgBox.classList.remove('visible'), 5000);
-        }
-    });
-
-    cameraBtn.addEventListener('click', () => {
-        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
-        const config = sceneEl.getAttribute('mindar-image');
-        sceneEl.setAttribute('mindar-image', config.includes('facingMode: user') ? 'facingMode: environment' : 'facingMode: user');
-    });
-
     [helpMessage, infoMessage, flashMsgBox].forEach(msg => msg.addEventListener('click', () => msg.classList.remove('visible')));
-    ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
 
-    shareBtn.addEventListener('click', async () => {
+    document.getElementById('cta-btn').addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
+
+    document.getElementById('share-btn').addEventListener('click', async () => {
         triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
         let path = lastFoundTargetIndex !== null ? `assets/share/${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
         if (navigator.share) {
@@ -352,6 +395,34 @@
             }
         }, 150);
     });
+
+    const captureFullImage = async () => {
+        return new Promise((resolve) => {
+            requestAnimationFrame(() => {
+                const cameraVideo = document.querySelector('video[style*="position: absolute"]');
+                const arCanvas = sceneEl.canvas;
+                const outputCanvas = document.createElement('canvas');
+                const ctx = outputCanvas.getContext('2d');
+                outputCanvas.width = arCanvas.width;
+                outputCanvas.height = arCanvas.height;
+                if (cameraVideo) {
+                    const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
+                    const canvasAspect = outputCanvas.width / outputCanvas.height;
+                    let drawWidth, drawHeight, offsetX, offsetY;
+                    if (videoAspect > canvasAspect) {
+                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
+                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
+                    } else {
+                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
+                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
+                    }
+                    ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
+                }
+                ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
+                outputCanvas.toBlob((blob) => resolve(new File([blob], "ar.png", { type: "image/png" })), 'image/png');
+            });
+        });
+    };
 
     sceneEl.addEventListener("arReady", () => {
         document.getElementById('loading-container').style.visibility = 'hidden'; 
