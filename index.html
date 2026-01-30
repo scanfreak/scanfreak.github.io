@@ -16,48 +16,39 @@
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; touch-action: none; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
 
+        /* Start Screen */
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 30; transition: opacity 0.5s, visibility 0.5s;
-            user-select: none;
+            z-index: 30; transition: opacity 0.5s, visibility 0.5s; user-select: none;
         }
-
         #start-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
         .logo-wrapper {
             position: relative; overflow: hidden;
             display: flex; justify-content: center; align-items: center;
-            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
-            margin-bottom: 20px;
+            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px; margin-bottom: 20px;
         }
-
         .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; opacity: 1; }
         .animate-logo { animation: fadeOut 3s ease-in-out forwards; }
         
         .logo-wrapper::after {
             content: ""; position: absolute; top: -150%; left: -150%; width: 100%; height: 400%;
-            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
-            transform: rotate(25deg);
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent); transform: rotate(25deg);
         }
-
         .animate-sweep::after { animation: sweep 1.2s ease-in-out forwards; }
         @keyframes sweep { 100% { top: 100%; left: 100%; } }
         @keyframes fadeOut { 0%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95); } }
 
         #loading-container {
             width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1);
-            margin-top: 20px; border-radius: 10px; position: relative;
-            overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
+            margin-top: 20px; border-radius: 10px; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
         #loading-bar {
             width: 40%; height: 100%; background: #ffffff;
-            position: absolute; left: -40%; border-radius: 10px;
-            animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
+            position: absolute; left: -40%; border-radius: 10px; animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
         }
-
         @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
 
         #start-btn {
@@ -66,41 +57,15 @@
             text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none;
             transition: opacity 0.8s ease-in; position: absolute; margin-top: 30px; 
         }
-
         #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
+        @keyframes pulseBtn { 0% { transform: translateY(-50%) scale(1); } 50% { transform: translateY(-50%) scale(1.08); } 100% { transform: translateY(-50%) scale(1); } }
         
-        @keyframes pulseBtn { 
-            0% { transform: translateY(-50%) scale(1); } 
-            50% { transform: translateY(-50%) scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 
-            100% { transform: translateY(-50%) scale(1); } 
-        }
-        
-        #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
-
-        #overlay { 
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            width: 80%; max-width: 400px; padding: 12px 0;
-            color: white; font-size: 18px; font-family: Arial, sans-serif; 
-            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); 
-            border-radius: 12px; z-index: 10; transition: opacity 0.5s; 
-            pointer-events: none; opacity: 0; 
-            overflow: hidden; white-space: nowrap;
-        }
-        #overlay.visible { opacity: 1; }
-
-        .marquee-text {
-            display: inline-block; padding-left: 100%;
-            animation: scroll-left 10s linear infinite;
-        }
-
-        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
+        /* UI Elements */
         .btn-ui {
             position: absolute; width: 36px; height: 36px; right: 10px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 20; transition: opacity 0.5s;
-            opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden;
+            cursor: pointer; z-index: 20; transition: opacity 0.5s; opacity: 0; pointer-events: none; overflow: hidden;
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
@@ -111,14 +76,6 @@
         #flash-btn { top: 195px; }
         #camera-btn { top: 240px; }
 
-        #screenshot-btn {
-            position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            width: 60px; height: 60px; border-radius: 15px; z-index: 20;
-            display: none;
-        }
-        #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
-
-        /* Zoom Indicator - Bottom Right */
         #zoom-indicator {
             position: absolute; bottom: 20px; right: 20px;
             background: rgba(0,0,0,0.6); color: white; padding: 5px 10px;
@@ -138,13 +95,20 @@
             opacity: 0; pointer-events: none; cursor: pointer; user-select: none; 
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
-        
         #flash-unavailable { width: 60%; max-width: 250px; padding: 15px; font-size: 16px; }
 
-        #flash-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: white; opacity: 0; z-index: 100; pointer-events: none;
+        #overlay { 
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 400px; padding: 12px 0; color: white; font-size: 18px; 
+            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); 
+            border-radius: 12px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; 
+            overflow: hidden; white-space: nowrap;
         }
+        #overlay.visible { opacity: 1; }
+        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 10s linear infinite; }
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+        #flash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; z-index: 100; pointer-events: none; }
         .flash-active { animation: flashAnim 0.3s ease-out; }
         @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
     </style>
@@ -168,8 +132,6 @@
     <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon" alt="Info"></div>
     <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon" alt="Flash"></div>
     <div id="camera-btn" class="btn-ui"><img src="assets/frontcamicon.png" class="ui-icon" alt="Camera"></div>
-    
-    <div id="screenshot-btn" class="btn-ui"><img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot"></div>
 
     <div id="help-message" class="msg-box">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     <div id="info-message" class="msg-box">New info will be placed here soon!</div>
@@ -188,7 +150,6 @@
             <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
             <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
             <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
-            <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
         </a-assets>
 
         <script>
@@ -196,25 +157,11 @@
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="0.9" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
         </script>
-
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
-    const COLLECTION_DATA = {
-        0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
-        1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
-        2: { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
-        3: { name: 'witch1', prefix: 'wit1', count: 6, folder: 'witch1' },
-        4: { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
-        5: { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' },
-        6: { name: 'seer', prefix: 'see', count: 20, folder: 'seer' },
-        7: { name: 'portal', prefix: 'por', count: 20, folder: 'portal' },
-        8: { name: 'nostradamus', prefix: 'nos', count: 20, folder: 'nostradamus' },
-        9: { name: 'mystic', prefix: 'mys', count: 20, folder: 'mystic' },
-        10: { name: 'mermaid', prefix: 'mer', count: 20, folder: 'mermaid' },
-        11: { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
-    };
+    const COLLECTION_DATA = { 0:{name:'wizard',prefix:'wiz',count:20,folder:'wizard'}, 1:{name:'witch3',prefix:'wit3',count:6,folder:'witch3'}, 2:{name:'witch2',prefix:'wit2',count:6,folder:'witch2'}, 3:{name:'witch1',prefix:'wit1',count:6,folder:'witch1'}, 4:{name:'tealeaf',prefix:'tea',count:20,folder:'tealeaf'}, 5:{name:'tarot',prefix:'tar',count:78,folder:'tarot'}, 6:{name:'seer',prefix:'see',count:20,folder:'seer'}, 7:{name:'portal',prefix:'por',count:20,folder:'portal'}, 8:{name:'nostradamus',prefix:'nos',count:20,folder:'nostradamus'}, 9:{name:'mystic',prefix:'mys',count:20,folder:'mystic'}, 10:{name:'mermaid',prefix:'mer',count:20,folder:'mermaid'}, 11:{name:'fortune',prefix:'for',count:20,folder:'fortune'} };
 
     const sceneEl = document.querySelector('a-scene');
     const zoomInd = document.getElementById('zoom-indicator');
@@ -223,44 +170,30 @@
     const helpBtn = document.getElementById('help-btn');
     const flashBtn = document.getElementById('flash-btn');
     const cameraBtn = document.getElementById('camera-btn');
-    const screenshotBtn = document.getElementById('screenshot-btn');
     const helpMessage = document.getElementById('help-message');
     const infoMessage = document.getElementById('info-message');
     const flashMsgBox = document.getElementById('flash-unavailable');
-    const flashOverlay = document.getElementById('flash-overlay');
 
-    const sfxStart = document.getElementById('sfx-start'), sfxStartup = document.getElementById('sfx-startup');
-    const sfxHelp = document.getElementById('sfx-help'), sfxStore = document.getElementById('sfx-store');
-    const sfxShare = document.getElementById('sfx-share'), sfxScreenshot = document.getElementById('sfx-screenshot');
+    const sfxStart = document.getElementById('sfx-start'), sfxStartup = document.getElementById('sfx-startup'), sfxHelp = document.getElementById('sfx-help'), sfxStore = document.getElementById('sfx-store'), sfxShare = document.getElementById('sfx-share');
 
-    let isStarted = false, helpTimeout, infoTimeout, flashTimeout, zoomTimeout, isFlashOn = false, lastFoundTargetIndex = null;
-    let initialDist = 0, currentScale = 1;
+    let isStarted = false, isFlashOn = false, lastFoundTargetIndex = null, initialDist = 0, currentScale = 1;
     const videoPool = {};
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // Restore and fix Zoom
-    window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
-            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        }
-    });
-
+    // Pinch Zoom Logic
+    window.addEventListener('touchstart', (e) => { if (e.touches.length === 2) initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); });
     window.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
             const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            const delta = dist / initialDist;
-            initialDist = dist;
+            const delta = dist / initialDist; initialDist = dist;
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
-            
             const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
             const plane = target.querySelector('a-plane');
             if (plane) { 
                 plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-                zoomInd.innerText = currentScale.toFixed(1) + "x";
-                zoomInd.classList.add('visible');
-                clearTimeout(zoomTimeout);
-                zoomTimeout = setTimeout(() => zoomInd.classList.remove('visible'), 1500);
+                zoomInd.innerText = currentScale.toFixed(1) + "x"; zoomInd.classList.add('visible');
+                clearTimeout(window.zoomTimeout); window.zoomTimeout = setTimeout(() => zoomInd.classList.remove('visible'), 1500);
             }
         }
     });
@@ -287,20 +220,16 @@
         };
 
         target.addEventListener('targetFound', () => {
-            if (!isStarted) return; 
-            triggerHaptic(); isTargetVisible = true; lastFoundTargetIndex = index; 
+            if (!isStarted) return; triggerHaptic(); isTargetVisible = true; lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
             [helpMessage, infoMessage, flashMsgBox].forEach(m => m.classList.remove('visible'));
             [helpBtn, document.getElementById('cta-btn'), document.getElementById('share-btn'), document.getElementById('info-btn'), flashBtn, cameraBtn].forEach(btn => btn.classList.remove('visible'));
-            screenshotBtn.classList.add('visible'); 
             const rand = Math.floor(Math.random() * data.count) + 1;
-            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
-            video.load(); 
+            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`; video.load(); 
         });
 
         target.addEventListener('targetLost', () => {
             isTargetVisible = false; plane.setAttribute('visible', false);
-            screenshotBtn.classList.remove('visible'); 
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 [helpBtn, document.getElementById('cta-btn'), document.getElementById('share-btn'), document.getElementById('info-btn'), flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
@@ -318,111 +247,47 @@
         overlay.classList.add('visible'); 
         [helpBtn, document.getElementById('cta-btn'), document.getElementById('share-btn'), document.getElementById('info-btn'), flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
-        Object.values(videoPool).forEach(v => v.load());
     });
 
-    // Android-Specific Flash Fix
+    // FLASH Logic
     flashBtn.addEventListener('click', async () => {
         triggerHaptic(); sfxStore.play();
-        try {
-            const video = document.querySelector('video[style*="position: absolute"]');
-            if (!video || !video.srcObject) throw new Error();
+        const video = document.querySelector('video');
+        if (video && video.srcObject) {
             const track = video.srcObject.getVideoTracks()[0];
             const caps = track.getCapabilities();
             if (caps.torch) {
                 isFlashOn = !isFlashOn;
                 await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-            } else { throw new Error(); }
-        } catch (e) {
-            flashMsgBox.classList.add('visible');
-            clearTimeout(flashTimeout);
-            flashTimeout = setTimeout(() => flashMsgBox.classList.remove('visible'), 5000);
+            } else {
+                flashMsgBox.classList.add('visible');
+                setTimeout(() => flashMsgBox.classList.remove('visible'), 3000);
+            }
         }
     });
 
-    cameraBtn.addEventListener('click', () => {
+    // CAMERA Logic - Fix for White Screen
+    cameraBtn.addEventListener('click', async () => {
         triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
         const mindarSystem = sceneEl.systems['mindar-image-system'];
-        const currentMode = sceneEl.getAttribute('mindar-image');
+        const currentConfig = sceneEl.getAttribute('mindar-image');
+        const isUser = currentConfig.includes('user');
+
+        // Force Stop AR and Video
         mindarSystem.stop();
-        const isFront = currentMode.includes('facingMode: user');
-        sceneEl.setAttribute('mindar-image', isFront ? 'facingMode: environment' : 'facingMode: user');
-        setTimeout(() => mindarSystem.start(), 300);
+        const videos = document.querySelectorAll('video');
+        videos.forEach(v => { if(!v.id) { v.srcObject?.getTracks().forEach(t => t.stop()); v.remove(); } });
+
+        // Update Config
+        sceneEl.setAttribute('mindar-image', isUser ? 'facingMode: environment' : 'facingMode: user');
+        
+        // Re-init with Delay to allow hardware reset
+        setTimeout(() => { mindarSystem.start(); }, 500);
     });
 
-    helpBtn.addEventListener('click', () => { 
-        triggerHaptic(); sfxHelp.play(); 
-        const isVisible = helpMessage.classList.toggle('visible'); 
-        infoMessage.classList.remove('visible'); flashMsgBox.classList.remove('visible');
-        clearTimeout(helpTimeout);
-        if(isVisible) helpTimeout = setTimeout(() => helpMessage.classList.remove('visible'), 10000);
-    });
-
-    document.getElementById('info-btn').addEventListener('click', () => {
-        triggerHaptic(); sfxHelp.play(); 
-        const isVisible = infoMessage.classList.toggle('visible'); 
-        helpMessage.classList.remove('visible'); flashMsgBox.classList.remove('visible');
-        clearTimeout(infoTimeout);
-        if(isVisible) infoTimeout = setTimeout(() => infoMessage.classList.remove('visible'), 10000);
-    });
-
+    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); helpMessage.classList.toggle('visible'); });
+    document.getElementById('info-btn').addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); infoMessage.classList.toggle('visible'); });
     [helpMessage, infoMessage, flashMsgBox].forEach(msg => msg.addEventListener('click', () => msg.classList.remove('visible')));
-
-    document.getElementById('cta-btn').addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
-
-    document.getElementById('share-btn').addEventListener('click', async () => {
-        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
-        let path = lastFoundTargetIndex !== null ? `assets/share/${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
-        if (navigator.share) {
-            try {
-                const res = await fetch(path);
-                const blob = await res.blob();
-                const file = new File([blob], "share.png", { type: 'image/png' });
-                await navigator.share({ title: 'SCANFREAK AR', text: "Check this out!", url: 'https://scanfreak.myshopify.com', files: [file] });
-            } catch (e) { navigator.share({ title: 'SCANFREAK AR', url: 'https://scanfreak.myshopify.com' }); }
-        }
-    });
-
-    screenshotBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
-        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
-        setTimeout(async () => {
-            if (navigator.share) {
-                try {
-                    const img = await captureFullImage();
-                    await navigator.share({ title: 'SCANFREAK AR', files: [img] });
-                } catch (e) {}
-            }
-        }, 150);
-    });
-
-    const captureFullImage = async () => {
-        return new Promise((resolve) => {
-            requestAnimationFrame(() => {
-                const cameraVideo = document.querySelector('video[style*="position: absolute"]');
-                const arCanvas = sceneEl.canvas;
-                const outputCanvas = document.createElement('canvas');
-                const ctx = outputCanvas.getContext('2d');
-                outputCanvas.width = arCanvas.width;
-                outputCanvas.height = arCanvas.height;
-                if (cameraVideo) {
-                    const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
-                    const canvasAspect = outputCanvas.width / outputCanvas.height;
-                    let drawWidth, drawHeight, offsetX, offsetY;
-                    if (videoAspect > canvasAspect) {
-                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
-                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
-                    } else {
-                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
-                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
-                    }
-                    ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
-                }
-                ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-                outputCanvas.toBlob((blob) => resolve(new File([blob], "ar.png", { type: "image/png" })), 'image/png');
-            });
-        });
-    };
 
     sceneEl.addEventListener("arReady", () => {
         document.getElementById('loading-container').style.visibility = 'hidden'; 
