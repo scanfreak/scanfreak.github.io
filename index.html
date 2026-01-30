@@ -79,15 +79,28 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
+        /* SCROLLING OVERLAY STYLES */
         #overlay { 
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            width: max-content; max-width: 85%; padding: 12px 20px; text-align: center; 
+            width: 80%; max-width: 400px; padding: 12px 0;
             color: white; font-size: 18px; font-family: Arial, sans-serif; 
             text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); 
             border-radius: 12px; z-index: 10; transition: opacity 0.5s; 
             pointer-events: none; opacity: 0; 
+            overflow: hidden; white-space: nowrap;
         }
         #overlay.visible { opacity: 1; }
+
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 10s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
 
         .btn-ui {
             position: absolute; width: 36px; height: 36px; right: 15px;
@@ -142,7 +155,7 @@
     </div>
 
     <div id="help-btn" class="btn-ui">
-	<img src="assets/helpicon.png" class="ui-icon" alt="Help">
+        <img src="assets/helpicon.png" class="ui-icon" alt="Help">
     </div>
     <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank">
         <img src="assets/storeicon.png" class="ui-icon" alt="Shop">
@@ -156,7 +169,10 @@
     </div>
 
     <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
-    <div id="overlay">Point camera at the SCANFREAK design!</div>
+    
+    <div id="overlay">
+        <span class="marquee-text">Point camera at the SCANFREAK design!</span>
+    </div>
 
     <a-scene id="ar-scene"
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5" 
@@ -224,13 +240,10 @@
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
-    
-    // This now persists the LAST scanned target even after losing track
     let lastFoundTargetIndex = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // --- PINCH ZOOM LOGIC ---
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
             initialDist = Math.hypot(
@@ -248,13 +261,10 @@
             );
             const delta = dist / initialDist;
             initialDist = dist;
-
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
             const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
             const plane = target.querySelector('a-plane');
-            if (plane) {
-                plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
-            }
+            if (plane) { plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`); }
         }
     });
 
@@ -268,13 +278,11 @@
                         cameraVideo = v;
                     }
                 });
-
                 const arCanvas = sceneEl.canvas;
                 const outputCanvas = document.createElement('canvas');
                 const ctx = outputCanvas.getContext('2d');
                 outputCanvas.width = arCanvas.width;
                 outputCanvas.height = arCanvas.height;
-
                 if (cameraVideo) {
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
@@ -307,7 +315,6 @@
         if (!target) return;
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
-
         const video = document.createElement('video');
         video.crossOrigin = "anonymous";
         video.loop = false;
@@ -350,7 +357,6 @@
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
-            // REMOVED: lastFoundTargetIndex = null; (This fixes the share button)
         });
     };
 
@@ -386,15 +392,12 @@
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
-    // --- FIXED SHARE BUTTON LOGIC ---
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
         sfxShare.currentTime = 0;
         sfxShare.play();
-
         let shareImagePath;
         let shareFileName;
-
         if (lastFoundTargetIndex !== null) {
             const data = COLLECTION_DATA[lastFoundTargetIndex];
             shareImagePath = `assets/share/${data.name}_share.png`;
@@ -403,24 +406,18 @@
             shareImagePath = `assets/scanfreakblanklogo.png`;
             shareFileName = `scanfreak_logo.png`;
         }
-
         if (navigator.share) {
             try {
                 const response = await fetch(shareImagePath);
-                if (!response.ok) throw new Error('File not found');
                 const blob = await response.blob();
                 const file = new File([blob], shareFileName, { type: 'image/png' });
-
-                const shareData = {
+                await navigator.share({
                     title: 'SCANFREAK AR',
                     text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
                     url: 'https://scanfreak.myshopify.com',
                     files: [file]
-                };
-
-                await navigator.share(shareData);
+                });
             } catch (err) { 
-                console.log("Share failed or file missing, falling back to text", err);
                 navigator.share({
                     title: 'SCANFREAK AR',
                     text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
@@ -437,18 +434,16 @@
         flashOverlay.classList.remove('flash-active');
         void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
-
         setTimeout(async () => {
             if (navigator.share) {
                 try {
                     const imageFile = await captureFullImage();
-                    const shareData = {
+                    await navigator.share({
                         title: 'SCANFREAK AR',
                         text: "The future is now - level up your reality or become obsolete! 👀",
                         url: 'https://scanfreak.myshopify.com',
                         files: [imageFile]
-                    };
-                    await navigator.share(shareData);
+                    });
                 } catch (err) { console.log("Screenshot share failed", err); }
             }
         }, 150);
