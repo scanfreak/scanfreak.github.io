@@ -20,29 +20,87 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 100; transition: opacity 0.5s;
+            z-index: 30; transition: opacity 0.5s, visibility 0.5s;
+            user-select: none;
         }
+
         #start-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
-        .logo-wrapper { position: relative; width: 70vw; height: 70vw; max-width: 300px; margin-bottom: 20px; }
-        .logo-image { width: 100%; height: 100%; object-fit: contain; }
+        .logo-wrapper {
+            position: relative; overflow: hidden;
+            display: flex; justify-content: center; align-items: center;
+            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
+            margin-bottom: 20px;
+        }
 
-        #loading-container { width: 200px; height: 4px; background: rgba(255,255,255,0.1); margin-top: 20px; border-radius: 10px; overflow: hidden; }
-        #loading-bar { width: 40%; height: 100%; background: #fff; position: absolute; left: -40%; animation: loadingMove 1.5s infinite; }
+        .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; opacity: 1; }
+        .animate-logo { animation: fadeOut 3s ease-in-out forwards; }
+        
+        .logo-wrapper::after {
+            content: ""; position: absolute; top: -150%; left: -150%; width: 100%; height: 400%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
+            transform: rotate(25deg);
+        }
+
+        .animate-sweep::after { animation: sweep 1.2s ease-in-out forwards; }
+        @keyframes sweep { 100% { top: 100%; left: 100%; } }
+        @keyframes fadeOut { 0%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95); } }
+
+        #loading-container {
+            width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1);
+            margin-top: 20px; border-radius: 10px; position: relative;
+            overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #loading-bar {
+            width: 40%; height: 100%; background: #ffffff;
+            position: absolute; left: -40%; border-radius: 10px;
+            animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
+        }
+
         @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
 
         #start-btn {
-            font-family: 'Press Start 2P', cursive; padding: 15px; font-size: 14px; 
-            background: white; border: 4px solid #555; border-radius: 15px;
-            opacity: 0; transition: opacity 0.8s; cursor: pointer;
+            font-family: 'Press Start 2P', cursive; padding: 15px 15px; font-size: 15px; color: black;
+            background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer;
+            text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none;
+            transition: opacity 0.8s ease-in; position: absolute; margin-top: 30px; 
         }
-        #start-btn.visible { opacity: 1; }
+
+        #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
+        
+        @keyframes pulseBtn { 
+            0% { transform: translateY(-50%) scale(1); } 
+            50% { transform: translateY(-50%) scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 
+            100% { transform: translateY(-50%) scale(1); } 
+        }
+        
+        #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
+
+        #overlay { 
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 400px; padding: 12px 0;
+            color: white; font-size: 18px; font-family: Arial, sans-serif; 
+            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); 
+            border-radius: 12px; z-index: 10; transition: opacity 0.5s; 
+            pointer-events: none; opacity: 0; 
+            overflow: hidden; white-space: nowrap;
+        }
+        #overlay.visible { opacity: 1; }
+
+        .marquee-text {
+            display: inline-block; padding-left: 100%;
+            animation: scroll-left 10s linear infinite;
+        }
+
+        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
 
         .btn-ui {
-            position: absolute; width: 38px; height: 38px; right: 10px;
-            background: rgba(0, 0, 0, 0.5); color: white; border: 2px solid white;
+            position: absolute; width: 36px; height: 36px; right: 10px;
+            background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
-            z-index: 50; opacity: 0; pointer-events: none; transition: opacity 0.4s;
+            cursor: pointer; z-index: 20; transition: opacity 0.5s;
+            opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden;
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
         
@@ -55,31 +113,24 @@
 
         #zoom-indicator {
             position: absolute; bottom: 20px; right: 20px;
-            background: rgba(0,0,0,0.7); color: white; padding: 6px 12px;
-            border-radius: 20px; font-family: 'Press Start 2P', cursive; font-size: 10px;
-            z-index: 60; opacity: 0; pointer-events: none;
+            background: rgba(0,0,0,0.6); color: white; padding: 5px 10px;
+            border-radius: 20px; font-family: 'Press Start 2P', cursive;
+            font-size: 10px; z-index: 21; opacity: 0; transition: opacity 0.3s;
+            pointer-events: none; border: 1px solid rgba(255,255,255,0.3);
         }
         #zoom-indicator.visible { opacity: 1; }
 
+        .ui-icon { width: 70%; height: 70%; object-fit: contain; }
+
         .msg-box {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 70%; padding: 20px; text-align: center; color: white; 
-            background: rgba(0, 0, 0, 0.9); border-radius: 15px; border: 2px solid #fff;
-            z-index: 200; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
+            font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
+            border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
+            opacity: 0; pointer-events: none; cursor: pointer; user-select: none; 
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
-
-        #overlay { 
-            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            width: 80%; padding: 10px; color: white; background: rgba(0,0,0,0.5);
-            border-radius: 10px; z-index: 40; opacity: 0; pointer-events: none;
-        }
-        #overlay.visible { opacity: 1; }
-        .marquee { display: block; overflow: hidden; white-space: nowrap; }
-        .marquee span { display: inline-block; padding-left: 100%; animation: scroll 8s linear infinite; }
-        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-        
-        .ui-icon { width: 70%; height: 70%; }
+        #flash-unavailable { width: 60%; max-width: 250px; padding: 15px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -87,8 +138,8 @@
     <div id="zoom-indicator">1.0x</div>
 
     <div id="start-screen">
-        <div class="logo-wrapper">
-            <img src="assets/scanfreakblanklogo.png" class="logo-image" alt="SCANFREAK">
+        <div class="logo-wrapper" id="logo-container">
+            <img src="assets/scanfreakblanklogo.png" class="logo-image" id="main-logo" alt="SCANFREAK AR">
         </div>
         <div id="loading-container"><div id="loading-bar"></div></div>
         <button id="start-btn">PRESS START</button>
@@ -100,56 +151,55 @@
     <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon"></div>
     <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon"></div>
     <div id="camera-btn" class="btn-ui"><img src="assets/frontcamicon.png" class="ui-icon"></div>
-
-    <div id="help-message" class="msg-box">Scanner not loading? Check your connection or disable VPN.</div>
-    <div id="info-message" class="msg-box">New collection details coming soon!</div>
-    <div id="flash-unavailable" class="msg-box" style="width: 50%;">Flash unavailable</div>
     
-    <div id="overlay" class="marquee"><span>Point camera at the SCANFREAK design!</span></div>
+    <div id="help-message" class="msg-box">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="info-message" class="msg-box">New info will be placed here soon!</div>
+    <div id="flash-unavailable" class="msg-box">Flash unavailable</div>
+    
+    <div id="overlay"><span class="marquee-text">Point camera at the SCANFREAK design!</span></div>
 
     <a-scene id="ar-scene"
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001;" 
-        embedded color-space="sRGB" renderer="colorManagement: true, preserveDrawingBuffer: true" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        
-        <a-assets>
-            <audio id="sfx-start" src="assets/sfx/start.mp3"></audio>
-            <audio id="sfx-startup" src="assets/sfx/startup.mp3"></audio>
-            <audio id="sfx-help" src="assets/sfx/help.mp3"></audio>
-            <audio id="sfx-store" src="assets/sfx/store.mp3"></audio>
-            <audio id="sfx-share" src="assets/sfx/share.mp3"></audio>
-        </a-assets>
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5" 
+        color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true, antialias: true, alpha: true" 
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        <a-assets>
+            <audio id="sfx-start" src="assets/sfx/start.mp3" preload="auto"></audio>
+            <audio id="sfx-startup" src="assets/sfx/startup.mp3" preload="auto"></audio>
+            <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
+            <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
+            <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
+        </a-assets>
 
         <script>
             for(let i=0; i<=11; i++) {
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="0.9" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
         </script>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
     const sceneEl = document.querySelector('a-scene');
     const startBtn = document.getElementById('start-btn');
-    const zoomInd = document.getElementById('zoom-indicator');
     const flashBtn = document.getElementById('flash-btn');
     const cameraBtn = document.getElementById('camera-btn');
+    const zoomInd = document.getElementById('zoom-indicator');
     const flashMsg = document.getElementById('flash-unavailable');
 
-    let isStarted = false, isFlashOn = false, currentScale = 1, initialDist = 0, lastIdx = null;
+    let isStarted = false, isFlashOn = false, lastFoundIdx = null, currentScale = 1, initialDist = 0;
 
-    // Haptics & Audio
     const tap = () => navigator.vibrate?.(50);
     const play = (id) => { const a = document.getElementById(id); if(a) { a.currentTime=0; a.play(); }};
 
     // PINCH ZOOM
     window.addEventListener('touchstart', e => { if(e.touches.length === 2) initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); });
     window.addEventListener('touchmove', e => {
-        if (e.touches.length === 2 && lastIdx !== null) {
+        if (e.touches.length === 2 && lastFoundIdx !== null) {
             const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             const delta = dist / initialDist; initialDist = dist;
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
-            const plane = document.querySelector(`[mindar-image-target="targetIndex: ${lastIdx}"] a-plane`);
+            const plane = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundIdx}"] a-plane`);
             if(plane) {
                 plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`);
                 zoomInd.innerText = currentScale.toFixed(1) + "x";
@@ -159,7 +209,6 @@
         }
     });
 
-    // START
     startBtn.addEventListener('click', () => {
         tap(); play('sfx-start');
         document.getElementById('start-screen').classList.add('hidden');
@@ -169,69 +218,52 @@
         setTimeout(() => play('sfx-startup'), 2000);
     });
 
-    // FLASH FIX
+    // FLASH REPAIR
     flashBtn.addEventListener('click', async () => {
         tap(); play('sfx-store');
-        const video = document.querySelector('video');
-        if (!video || !video.srcObject) return showFlashError();
-        
-        const track = video.srcObject.getVideoTracks()[0];
-        const caps = track.getCapabilities();
-        
-        if (caps.torch) {
-            try {
+        try {
+            const video = document.querySelector('video');
+            if (!video || !video.srcObject) throw "err";
+            const track = video.srcObject.getVideoTracks()[0];
+            const caps = track.getCapabilities();
+            if (caps.torch) {
                 isFlashOn = !isFlashOn;
                 await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-            } catch (e) { showFlashError(); }
-        } else { showFlashError(); }
+            } else { throw "err"; }
+        } catch (e) {
+            flashMsg.classList.add('visible');
+            setTimeout(() => flashMsg.classList.remove('visible'), 3000);
+        }
     });
 
-    function showFlashError() {
-        flashMsg.classList.add('visible');
-        setTimeout(() => flashMsg.classList.remove('visible'), 3000);
-    }
-
-    // CAMERA SWITCH FIX (KILL STREAM)
+    // CAMERA SWITCH - HARD RESET
     cameraBtn.addEventListener('click', async () => {
         tap(); play('sfx-share');
         const system = sceneEl.systems['mindar-image-system'];
         const isUser = sceneEl.getAttribute('mindar-image').includes('user');
 
-        // 1. Fully stop AR
         system.stop();
-
-        // 2. Locate and Kill ALL active camera tracks
-        const activeVideos = document.querySelectorAll('video');
-        activeVideos.forEach(v => {
-            if (v.srcObject) {
-                v.srcObject.getTracks().forEach(track => track.stop()); // Hardware off
-                v.srcObject = null;
-            }
-            if (!v.id) v.remove(); // Remove MindAR's auto-generated video
+        document.querySelectorAll('video').forEach(v => {
+            if (v.srcObject) v.srcObject.getTracks().forEach(t => t.stop());
+            if (!v.id) v.remove();
         });
 
-        // 3. Toggle and Re-init
         sceneEl.setAttribute('mindar-image', isUser ? 'facingMode: environment' : 'facingMode: user');
-        
-        // Short delay to let Android release the hardware lock
-        setTimeout(() => {
-            system.start();
-        }, 600);
+        setTimeout(() => system.start(), 500);
     });
 
-    // Target Logic
     sceneEl.addEventListener("arReady", () => {
-        document.getElementById('loading-bar').style.animation = "none";
-        document.getElementById('loading-bar').style.width = "100%";
-        startBtn.classList.add('visible');
+        document.getElementById('loading-container').style.visibility = 'hidden'; 
+        document.getElementById('logo-container').classList.add('animate-sweep');
+        document.getElementById('main-logo').classList.add('animate-logo');
+        setTimeout(() => startBtn.classList.add('visible'), 3000);
     });
 
-    document.querySelectorAll('[mindar-image-target]').forEach(target => {
-        target.addEventListener('targetFound', () => { lastIdx = target.getAttribute('mindar-image-target').split(':')[1]; });
-        target.addEventListener('targetLost', () => { lastIdx = null; });
+    document.querySelectorAll('[mindar-image-target]').forEach(t => {
+        t.addEventListener('targetFound', () => { lastFoundIdx = t.getAttribute('mindar-image-target').split(':')[1]; });
+        t.addEventListener('targetLost', () => { lastFoundIdx = null; });
     });
 
-    // Message triggers
     document.getElementById('help-btn').addEventListener('click', () => { tap(); play('sfx-help'); document.getElementById('help-message').classList.toggle('visible'); });
     document.getElementById('info-btn').addEventListener('click', () => { tap(); play('sfx-help'); document.getElementById('info-message').classList.toggle('visible'); });
     document.querySelectorAll('.msg-box').forEach(m => m.addEventListener('click', () => m.classList.remove('visible')));
