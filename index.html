@@ -79,7 +79,6 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        /* SCROLLING OVERLAY STYLES */
         #overlay { 
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             width: 80%; max-width: 400px; padding: 12px 0;
@@ -103,7 +102,8 @@
         }
 
         .btn-ui {
-            position: absolute; width: 36px; height: 36px; right: 15px;
+            position: absolute; width: 36px; height: 36px; 
+            right: 10px; /* Moved 5px to the right from 15px */
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
             cursor: pointer; z-index: 20; transition: opacity 0.5s;
@@ -114,6 +114,9 @@
         #help-btn { top: 15px; }
         #cta-btn { top: 60px; } 
         #share-btn { top: 105px; } 
+        #info-btn { top: 150px; }
+        #flash-btn { top: 195px; }
+        #camera-btn { top: 240px; }
 
         #screenshot-btn {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -124,15 +127,14 @@
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
-        #help-message { 
+        .msg-box {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
             font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
             border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
-            opacity: 0; pointer-events: none; cursor: pointer;
-            user-select: none; 
+            opacity: 0; pointer-events: none; cursor: pointer; user-select: none; 
         }
-        #help-message.visible { opacity: 1; pointer-events: auto; }
+        .msg-box.visible { opacity: 1; pointer-events: auto; }
 
         #flash-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -163,12 +165,22 @@
     <div id="share-btn" class="btn-ui">
         <img src="assets/shareicon.png" class="ui-icon" alt="Share">
     </div>
+    <div id="info-btn" class="btn-ui">
+        <img src="assets/infoicon.png" class="ui-icon" alt="Info">
+    </div>
+    <div id="flash-btn" class="btn-ui">
+        <img src="assets/flashicon.png" class="ui-icon" alt="Flash">
+    </div>
+    <div id="camera-btn" class="btn-ui">
+        <img src="assets/frontcamicon.png" class="ui-icon" alt="Camera">
+    </div>
     
     <div id="screenshot-btn" class="btn-ui">
         <img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot">
     </div>
 
-    <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="help-message" class="msg-box">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="info-message" class="msg-box">New info will be placed here soon!</div>
     
     <div id="overlay">
         <span class="marquee-text">Point camera at the SCANFREAK design!</span>
@@ -224,8 +236,12 @@
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
     const shareBtn = document.getElementById('share-btn');
+    const infoBtn = document.getElementById('info-btn');
+    const flashBtn = document.getElementById('flash-btn');
+    const cameraBtn = document.getElementById('camera-btn');
     const screenshotBtn = document.getElementById('screenshot-btn');
     const helpMessage = document.getElementById('help-message');
+    const infoMessage = document.getElementById('info-message');
     const flashOverlay = document.getElementById('flash-overlay');
 
     const sfxStart = document.getElementById('sfx-start');
@@ -236,29 +252,25 @@
     const sfxScreenshot = document.getElementById('sfx-screenshot');
 
     let isStarted = false;
-    let helpTimeout;
+    let helpTimeout, infoTimeout;
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
     let lastFoundTargetIndex = null;
+    let isFlashOn = false;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
+    // Pinch Zoom Logic
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2) {
-            initialDist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
+            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
         }
     });
 
     window.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
-            const dist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             const delta = dist / initialDist;
             initialDist = dist;
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
@@ -288,15 +300,11 @@
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
                     if (videoAspect > canvasAspect) {
-                        drawHeight = outputCanvas.height;
-                        drawWidth = drawHeight * videoAspect;
-                        offsetX = -(drawWidth - outputCanvas.width) / 2;
-                        offsetY = 0;
+                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
+                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
                     } else {
-                        drawWidth = outputCanvas.width;
-                        drawHeight = drawWidth / videoAspect;
-                        offsetX = 0;
-                        offsetY = -(drawHeight - outputCanvas.height) / 2;
+                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
+                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
                 }
@@ -316,11 +324,8 @@
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
         const video = document.createElement('video');
-        video.crossOrigin = "anonymous";
-        video.loop = false;
-        video.preload = "auto";
-        video.setAttribute('playsinline', ''); 
-        video.style.display = 'none';
+        video.crossOrigin = "anonymous"; video.loop = false; video.preload = "auto";
+        video.setAttribute('playsinline', ''); video.style.display = 'none';
         document.body.appendChild(video);
         videoPool[index] = video;
 
@@ -340,8 +345,9 @@
             lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
             helpMessage.classList.remove('visible');
-            clearTimeout(helpTimeout);
-            [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
+            infoMessage.classList.remove('visible');
+            clearTimeout(helpTimeout); clearTimeout(infoTimeout);
+            [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, cameraBtn].forEach(btn => btn.classList.remove('visible'));
             screenshotBtn.classList.add('visible'); 
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
@@ -354,7 +360,7 @@
             screenshotBtn.classList.remove('visible'); 
             if (isStarted) {
                 overlay.classList.add('visible'); 
-                [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
+                [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
         });
@@ -370,42 +376,57 @@
         setTimeout(() => sfxStartup.play(), 2000);
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
-        [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
+        [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, cameraBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
     });
 
     helpBtn.addEventListener('click', () => { 
-        triggerHaptic(); 
-        sfxHelp.play(); 
+        triggerHaptic(); sfxHelp.play(); 
         const isNowVisible = helpMessage.classList.toggle('visible'); 
+        infoMessage.classList.remove('visible');
         clearTimeout(helpTimeout);
-        if(isNowVisible) {
-            helpTimeout = setTimeout(() => { helpMessage.classList.remove('visible'); }, 10000);
+        if(isNowVisible) helpTimeout = setTimeout(() => { helpMessage.classList.remove('visible'); }, 10000);
+    });
+
+    infoBtn.addEventListener('click', () => {
+        triggerHaptic(); sfxHelp.play(); 
+        const isNowVisible = infoMessage.classList.toggle('visible'); 
+        helpMessage.classList.remove('visible');
+        clearTimeout(infoTimeout);
+        if(isNowVisible) infoTimeout = setTimeout(() => { infoMessage.classList.remove('visible'); }, 10000);
+    });
+
+    [helpMessage, infoMessage].forEach(msg => {
+        msg.addEventListener('click', () => { msg.classList.remove('visible'); });
+    });
+
+    flashBtn.addEventListener('click', async () => {
+        triggerHaptic();
+        const videoTrack = document.querySelector('video').srcObject?.getVideoTracks()[0];
+        if (videoTrack && videoTrack.getCapabilities().torch) {
+            isFlashOn = !isFlashOn;
+            await videoTrack.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+        } else {
+            console.log("Torch not supported on this device/browser.");
         }
     });
 
-    helpMessage.addEventListener('click', () => {
-        helpMessage.classList.remove('visible');
-        clearTimeout(helpTimeout);
+    cameraBtn.addEventListener('click', () => {
+        triggerHaptic();
+        const currentUI = sceneEl.getAttribute('mindar-image');
+        const isUser = currentUI.includes('uiScanning: user') || currentUI.includes('facingMode: user');
+        sceneEl.setAttribute('mindar-image', isUser ? 'facingMode: environment' : 'facingMode: user');
+        // Minor reload may occur depending on MindAR version to re-init stream
     });
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
     shareBtn.addEventListener('click', async () => {
         triggerHaptic();
-        sfxShare.currentTime = 0;
-        sfxShare.play();
-        let shareImagePath;
-        let shareFileName;
-        if (lastFoundTargetIndex !== null) {
-            const data = COLLECTION_DATA[lastFoundTargetIndex];
-            shareImagePath = `assets/share/${data.name}_share.png`;
-            shareFileName = `${data.name}_share.png`;
-        } else {
-            shareImagePath = `assets/scanfreakblanklogo.png`;
-            shareFileName = `scanfreak_logo.png`;
-        }
+        sfxShare.currentTime = 0; sfxShare.play();
+        let shareImagePath = lastFoundTargetIndex !== null ? `assets/share/${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
+        let shareFileName = lastFoundTargetIndex !== null ? `${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `scanfreak_logo.png`;
         if (navigator.share) {
             try {
                 const response = await fetch(shareImagePath);
@@ -418,29 +439,23 @@
                     files: [file]
                 });
             } catch (err) { 
-                navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com'
-                });
+                navigator.share({ title: 'SCANFREAK AR', text: "Experience this AR!", url: 'https://scanfreak.myshopify.com' });
             }
         }
     });
 
     screenshotBtn.addEventListener('click', async () => {
         triggerHaptic();
-        sfxScreenshot.currentTime = 0;
-        sfxScreenshot.play();
+        sfxScreenshot.currentTime = 0; sfxScreenshot.play();
         flashOverlay.classList.remove('flash-active');
-        void flashOverlay.offsetWidth; 
-        flashOverlay.classList.add('flash-active');
+        void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
         setTimeout(async () => {
             if (navigator.share) {
                 try {
                     const imageFile = await captureFullImage();
                     await navigator.share({
                         title: 'SCANFREAK AR',
-                        text: "The future is now - level up your reality or become obsolete! 👀",
+                        text: "The future is now!",
                         url: 'https://scanfreak.myshopify.com',
                         files: [imageFile]
                     });
