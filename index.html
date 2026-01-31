@@ -79,14 +79,13 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        /* --- CUSTOM SCANNER UI (20% REDUCED SIZE) --- */
+        /* --- UPDATED CUSTOM SCANNER UI --- */
         #scanner-ui {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: 60vw; height: 60vw; /* Reduced size */
+            width: 60vw; height: 60vw;
             max-width: 320px; max-height: 320px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             z-index: 5;
             pointer-events: none;
             opacity: 0;
@@ -96,23 +95,27 @@
         #scanner-ui.visible { opacity: 1; }
 
         .corner {
-            position: absolute; width: 20px; height: 20px;
-            border: 4px solid white;
+            position: absolute; width: 30px; height: 30px;
+            /* Thicker corners: 8px (100% thicker than previous 4px) */
+            border: 8px solid white;
         }
-        .top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 15px; }
-        .top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 15px; }
-        .bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 15px; }
-        .bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 15px; }
+        /* Right angles (no border-radius) */
+        .top-left { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+        .top-right { top: -4px; right: -4px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: -4px; left: -4px; border-right: none; border-top: none; }
+        .bottom-right { bottom: -4px; right: -4px; border-left: none; border-top: none; }
 
         .scan-line {
-            position: absolute; width: 100%; height: 2px;
+            position: absolute; width: 100%; 
+            /* 400% thicker: 8px (from previous 2px) */
+            height: 8px;
             background: white; top: 0; left: 0;
-            box-shadow: 0 0 15px white;
+            box-shadow: 0 0 20px white;
             animation: scanMove 2.5s ease-in-out infinite;
         }
 
         @keyframes scanMove {
-            0%, 100% { top: 5%; opacity: 0.2; }
+            0%, 100% { top: 5%; opacity: 0.3; }
             50% { top: 95%; opacity: 1; }
         }
 
@@ -400,7 +403,7 @@
             isTargetVisible = true;
             lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
-            scannerUi.classList.remove('visible'); // Hide scanner frame on find
+            scannerUi.classList.remove('visible');
             helpMessage.classList.remove('visible');
             clearTimeout(helpTimeout);
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
@@ -424,7 +427,7 @@
 
             if (isStarted) {
                 overlay.classList.add('visible'); 
-                scannerUi.classList.add('visible'); // Show scanner frame on loss
+                scannerUi.classList.add('visible');
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
@@ -441,7 +444,7 @@
         setTimeout(() => sfxStartup.play(), 2000);
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
-        scannerUi.classList.add('visible'); // Show custom scanner on start
+        scannerUi.classList.add('visible');
         [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
