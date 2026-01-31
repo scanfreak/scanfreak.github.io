@@ -79,6 +79,44 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
+        /* --- CUSTOM SCANNER UI (20% REDUCED SIZE) --- */
+        #scanner-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60vw; height: 60vw; /* Reduced size */
+            max-width: 320px; max-height: 320px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #scanner-ui.visible { opacity: 1; }
+
+        .corner {
+            position: absolute; width: 20px; height: 20px;
+            border: 4px solid white;
+        }
+        .top-left { top: -2px; left: -2px; border-right: none; border-bottom: none; border-top-left-radius: 15px; }
+        .top-right { top: -2px; right: -2px; border-left: none; border-bottom: none; border-top-right-radius: 15px; }
+        .bottom-left { bottom: -2px; left: -2px; border-right: none; border-top: none; border-bottom-left-radius: 15px; }
+        .bottom-right { bottom: -2px; right: -2px; border-left: none; border-top: none; border-bottom-right-radius: 15px; }
+
+        .scan-line {
+            position: absolute; width: 100%; height: 2px;
+            background: white; top: 0; left: 0;
+            box-shadow: 0 0 15px white;
+            animation: scanMove 2.5s ease-in-out infinite;
+        }
+
+        @keyframes scanMove {
+            0%, 100% { top: 5%; opacity: 0.2; }
+            50% { top: 95%; opacity: 1; }
+        }
+
+        /* --- OVERLAY & BUTTONS --- */
         #overlay { 
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             width: 80%; max-width: 400px; padding: 12px 0;
@@ -93,7 +131,6 @@
         .marquee-text {
             display: inline-block;
             padding-left: 100%;
-            /* Faster scanner animation: 8s reduced to 6.4s (20% faster) */
             animation: scroll-left 6.4s linear infinite;
         }
 
@@ -155,6 +192,14 @@
 
     <div id="flash-overlay"></div>
 
+    <div id="scanner-ui">
+        <div class="corner top-left"></div>
+        <div class="corner top-right"></div>
+        <div class="corner bottom-left"></div>
+        <div class="corner bottom-right"></div>
+        <div class="scan-line"></div>
+    </div>
+
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
             <img src="assets/scanfreakblanklogo.png" class="logo-image" id="main-logo" alt="SCANFREAK AR">
@@ -186,7 +231,7 @@
     </div>
 
     <a-scene id="ar-scene"
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5" 
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; uiScanning: no" 
         color-space="sRGB" 
         renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true, antialias: true, alpha: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
@@ -228,6 +273,7 @@
     const sceneEl = document.querySelector('a-scene');
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
+    const scannerUi = document.getElementById('scanner-ui');
     const loadingContainer = document.getElementById('loading-container');
     const logoContainer = document.getElementById('logo-container');
     const mainLogo = document.getElementById('main-logo');
@@ -354,6 +400,7 @@
             isTargetVisible = true;
             lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
+            scannerUi.classList.remove('visible'); // Hide scanner frame on find
             helpMessage.classList.remove('visible');
             clearTimeout(helpTimeout);
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
@@ -377,6 +424,7 @@
 
             if (isStarted) {
                 overlay.classList.add('visible'); 
+                scannerUi.classList.add('visible'); // Show scanner frame on loss
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
@@ -393,6 +441,7 @@
         setTimeout(() => sfxStartup.play(), 2000);
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
+        scannerUi.classList.add('visible'); // Show custom scanner on start
         [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
