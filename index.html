@@ -79,7 +79,6 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        /* SCROLLING OVERLAY STYLES */
         #overlay { 
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             width: 80%; max-width: 400px; padding: 12px 0;
@@ -121,6 +120,15 @@
             display: none;
         }
         #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
+
+        #zoom-display {
+            position: absolute; bottom: 15px; right: 15px;
+            font-family: 'Press Start 2P', cursive; font-size: 10px;
+            color: white; background: rgba(0, 0, 0, 0.5);
+            padding: 8px; border-radius: 5px; z-index: 20;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s;
+        }
+        #zoom-display.visible { opacity: 1; }
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
@@ -167,6 +175,8 @@
     <div id="screenshot-btn" class="btn-ui">
         <img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot">
     </div>
+
+    <div id="zoom-display">ZOOM: 1.0x</div>
 
     <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     
@@ -227,6 +237,7 @@
     const screenshotBtn = document.getElementById('screenshot-btn');
     const helpMessage = document.getElementById('help-message');
     const flashOverlay = document.getElementById('flash-overlay');
+    const zoomDisplay = document.getElementById('zoom-display');
 
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
@@ -245,7 +256,7 @@
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
     window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2) {
+        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
             initialDist = Math.hypot(
                 e.touches[0].pageX - e.touches[1].pageX,
                 e.touches[0].pageY - e.touches[1].pageY
@@ -264,7 +275,10 @@
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
             const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
             const plane = target.querySelector('a-plane');
-            if (plane) { plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`); }
+            if (plane) { 
+                plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`); 
+                zoomDisplay.innerText = `ZOOM: ${currentScale.toFixed(1)}x`;
+            }
         }
     });
 
@@ -343,6 +357,7 @@
             clearTimeout(helpTimeout);
             [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
             screenshotBtn.classList.add('visible'); 
+            zoomDisplay.classList.add('visible');
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load(); 
@@ -352,6 +367,14 @@
             isTargetVisible = false;
             plane.setAttribute('visible', false);
             screenshotBtn.classList.remove('visible'); 
+            zoomDisplay.classList.remove('visible');
+            
+            // Reset Zoom Logic
+            currentScale = 1;
+            plane.setAttribute('scale', '1 1 1');
+            zoomDisplay.innerText = `ZOOM: 1.0x`;
+            lastFoundTargetIndex = null;
+
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
