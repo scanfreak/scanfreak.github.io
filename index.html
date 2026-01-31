@@ -93,7 +93,8 @@
         .marquee-text {
             display: inline-block;
             padding-left: 100%;
-            animation: scroll-left 8s linear infinite;
+            /* Faster scanner animation: 8s reduced to 6.4s (20% faster) */
+            animation: scroll-left 6.4s linear infinite;
         }
 
         @keyframes scroll-left {
@@ -201,8 +202,7 @@
 
         <script>
             for(let i=0; i<=11; i++) {
-                // Reduced width to 0.8 (20% reduction from original 1.0)
-                document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="0.8" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
+                document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
         </script>
 
@@ -341,8 +341,7 @@
 
         video.onloadeddata = () => {
             if (isTargetVisible) {
-                // Calculation for height maintains aspect ratio relative to the 0.8 width
-                plane.setAttribute('height', (video.videoHeight / video.videoWidth) * 0.8);
+                plane.setAttribute('height', video.videoHeight / video.videoWidth);
                 plane.setAttribute('material', {src: video, shader: 'flat'});
                 plane.setAttribute('visible', true);
                 video.play().catch(e => console.log(e));
