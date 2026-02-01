@@ -250,6 +250,8 @@
             <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
             <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
             <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
+            <audio id="sfx-flash" src="assets/sfx/flash.mp3" preload="auto"></audio>
+            <audio id="sfx-info" src="assets/sfx/info.mp3" preload="auto"></audio>
         </a-assets>
 
         <script>
@@ -302,6 +304,8 @@
     const sfxStore = document.getElementById('sfx-store');
     const sfxShare = document.getElementById('sfx-share');
     const sfxScreenshot = document.getElementById('sfx-screenshot');
+    const sfxFlash = document.getElementById('sfx-flash');
+    const sfxInfo = document.getElementById('sfx-info');
 
     let isStarted = false;
     let msgTimeout;
@@ -323,8 +327,17 @@
         msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
     };
 
+    const findCameraVideo = () => {
+        cameraVideo = Array.from(document.querySelectorAll('video')).find(v => 
+            v.style.position === 'absolute' || 
+            (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))
+        );
+    };
+
     const toggleFlash = async () => {
         triggerHaptic();
+        sfxFlash.currentTime = 0;
+        sfxFlash.play();
         try {
             if (!cameraVideo) findCameraVideo();
             if (!track && cameraVideo) track = cameraVideo.srcObject.getVideoTracks()[0];
@@ -333,13 +346,6 @@
             isFlashOn = !isFlashOn;
             await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
         } catch (err) { showMessage(flashErrorMsg); }
-    };
-
-    const findCameraVideo = () => {
-        cameraVideo = Array.from(document.querySelectorAll('video')).find(v => 
-            v.style.position === 'absolute' || 
-            (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))
-        );
     };
 
     window.addEventListener('touchstart', (e) => {
@@ -436,7 +442,6 @@
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load();
-            // Cache camera video source immediately on find to ensure screenshot has it ready
             if (!cameraVideo) findCameraVideo();
         });
 
@@ -473,9 +478,18 @@
     });
 
     helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
-    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(infoMessage); });
+    
+    infoBtn.addEventListener('click', () => { 
+        triggerHaptic(); 
+        sfxInfo.currentTime = 0; 
+        sfxInfo.play(); 
+        showMessage(infoMessage); 
+    });
+
     flashBtn.addEventListener('click', toggleFlash);
+    
     document.querySelectorAll('.msg-box').forEach(msg => msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); }));
+    
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
     shareBtn.addEventListener('click', async () => {
