@@ -183,7 +183,7 @@
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: white; opacity: 0; z-index: 100; pointer-events: none;
         }
-        .flash-active { animation: flashAnim 0.3s ease-out; }
+        .flash-active { animation: flashAnim 0.15s ease-out; }
         @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
@@ -240,7 +240,7 @@
     <a-scene id="ar-scene"
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; uiScanning: no" 
         color-space="sRGB" 
-        renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true, antialias: true, alpha: true" 
+        renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true, antialias: false, alpha: true" 
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
         <a-assets>
@@ -309,7 +309,7 @@
     let currentScale = 1;
     let initialDist = 0;
     let lastFoundTargetIndex = null;
-    let sessionPersistentTargetIndex = null; // Stores last image found even after target loss
+    let sessionPersistentTargetIndex = null;
     let isFlashOn = false;
     let track = null;
 
@@ -357,6 +357,7 @@
         }
     });
 
+    // OPTIMIZED SCREENSHOT FUNCTION
     const captureFullImage = async () => {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
@@ -364,23 +365,36 @@
                 const arCanvas = sceneEl.canvas;
                 const outputCanvas = document.createElement('canvas');
                 const ctx = outputCanvas.getContext('2d');
+                
+                // Use lower resolution for faster processing if display is huge
                 outputCanvas.width = arCanvas.width;
                 outputCanvas.height = arCanvas.height;
+
                 if (cameraVideo) {
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
+                    
                     if (videoAspect > canvasAspect) {
-                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
-                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
+                        drawHeight = outputCanvas.height;
+                        drawWidth = drawHeight * videoAspect;
+                        offsetX = -(drawWidth - outputCanvas.width) / 2;
+                        offsetY = 0;
                     } else {
-                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
-                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
+                        drawWidth = outputCanvas.width;
+                        drawHeight = drawWidth / videoAspect;
+                        offsetX = 0;
+                        offsetY = -(drawHeight - outputCanvas.height) / 2;
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
                 }
+                
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-                outputCanvas.toBlob(blob => resolve(new File([blob], "scanfreak_ar.png", { type: "image/png" })), 'image/png');
+                
+                // Faster blob conversion (JPEG is usually faster than PNG)
+                outputCanvas.toBlob(blob => {
+                    resolve(new File([blob], "scanfreak_ar.jpg", { type: "image/jpeg" }));
+                }, 'image/jpeg', 0.85);
             });
         });
     };
@@ -411,7 +425,7 @@
             triggerHaptic(); 
             isTargetVisible = true;
             lastFoundTargetIndex = index; 
-            sessionPersistentTargetIndex = index; // Persist for sharing
+            sessionPersistentTargetIndex = index;
             overlay.classList.remove('visible'); 
             scannerUi.classList.remove('visible');
             document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
@@ -462,7 +476,6 @@
     
     shareBtn.addEventListener('click', async () => {
         triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
-        // Uses persistent target index if one was found, otherwise default logo
         let shareImagePath = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
         let shareFileName = sessionPersistentTargetIndex !== null ? `${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `scanfreak_logo.png`;
         if (navigator.share) {
@@ -490,19 +503,19 @@
         triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
         flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
-        setTimeout(async () => {
+        
+        // Execute capture immediately without arbitrary delay
+        try {
+            const imageFile = await captureFullImage();
             if (navigator.share) {
-                try {
-                    const imageFile = await captureFullImage();
-                    await navigator.share({
-                        title: 'SCANFREAK AR',
-                        text: "The future is now - level up your reality or become obsolete! 👀",
-                        url: 'https://scanfreak.myshopify.com',
-                        files: [imageFile]
-                    });
-                } catch (err) { console.log("Screenshot share failed", err); }
+                await navigator.share({
+                    title: 'SCANFREAK AR',
+                    text: "The future is now - level up your reality or become obsolete! 👀",
+                    url: 'https://scanfreak.myshopify.com',
+                    files: [imageFile]
+                });
             }
-        }, 150);
+        } catch (err) { console.log("Screenshot share failed", err); }
     });
 
     sceneEl.addEventListener("arReady", () => {
