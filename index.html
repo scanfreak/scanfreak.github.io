@@ -16,335 +16,219 @@
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; touch-action: none; background: #000; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
 
-        /* --- ORIGINAL UI --- */
+        /* --- UI ELEMENTS --- */
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 30; transition: opacity 0.5s, visibility 0.5s;
-            user-select: none;
         }
         #start-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+        
         .logo-wrapper { position: relative; overflow: hidden; display: flex; justify-content: center; align-items: center; width: 70vw; height: 70vw; max-width: 300px; max-height: 300px; margin-bottom: 20px; }
-        .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; opacity: 1; }
-        .animate-logo { animation: fadeOut 3s ease-in-out forwards; }
-        .logo-wrapper::after { content: ""; position: absolute; top: -150%; left: -150%; width: 100%; height: 400%; background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent); transform: rotate(25deg); }
-        .animate-sweep::after { animation: sweep 1.2s ease-in-out forwards; }
-        @keyframes sweep { 100% { top: 100%; left: 100%; } }
-        @keyframes fadeOut { 0%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95); } }
-        #loading-container { width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1); margin-top: 20px; border-radius: 10px; position: relative; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2); }
-        #loading-bar { width: 40%; height: 100%; background: #ffffff; position: absolute; left: -40%; border-radius: 10px; animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff; }
+        .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; }
+        
+        #loading-container { width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1); margin-top: 20px; border-radius: 10px; position: relative; overflow: hidden; }
+        #loading-bar { width: 40%; height: 100%; background: #ffffff; position: absolute; left: -40%; animation: loadingMove 1.5s infinite ease-in-out; }
         @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
-        #start-btn { font-family: 'Press Start 2P', cursive; padding: 15px 15px; font-size: 15px; color: black; background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer; text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none; transition: opacity 0.8s ease-in; position: absolute; margin-top: 30px; }
-        #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
-        @keyframes pulseBtn { 0% { transform: translateY(-50%) scale(1); } 50% { transform: translateY(-50%) scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 100% { transform: translateY(-50%) scale(1); } }
-        #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        #scanner-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60vw; height: 60vw; max-width: 320px; max-height: 320px; border: 2px solid rgba(255, 255, 255, 0); z-index: 5; pointer-events: auto; opacity: 0; transition: opacity 0.5s; }
+        #start-btn { font-family: 'Press Start 2P', cursive; padding: 15px; font-size: 15px; color: black; background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.8s; }
+        #start-btn.visible { opacity: 1; pointer-events: auto; }
+
+        #scanner-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60vw; height: 60vw; max-width: 320px; max-height: 320px; z-index: 5; opacity: 0; transition: opacity 0.5s; cursor: pointer; }
         #scanner-ui.visible { opacity: 1; }
         .corner { position: absolute; width: 30px; height: 30px; border: 8px solid white; pointer-events: none; }
         .top-left { top: -4px; left: -4px; border-right: none; border-bottom: none; }
         .top-right { top: -4px; right: -4px; border-left: none; border-bottom: none; }
         .bottom-left { bottom: -4px; left: -4px; border-right: none; border-top: none; }
         .bottom-right { bottom: -4px; right: -4px; border-left: none; border-top: none; }
-        .scan-line { position: absolute; width: 100%; height: 8px; background: white; top: 0; left: 0; box-shadow: 0 0 20px white; animation: scanMove 2.0s ease-in-out infinite; pointer-events: none; }
-        @keyframes scanMove { 0%, 100% { top: 5%; opacity: 0.3; } 50% { top: 95%; opacity: 1; } }
+        .scan-line { position: absolute; width: 100%; height: 8px; background: white; top: 0; left: 0; box-shadow: 0 0 20px white; animation: scanMove 2s infinite; }
+        @keyframes scanMove { 0%, 100% { top: 5%; } 50% { top: 95%; } }
 
-        #overlay { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 400px; padding: 12px 0; color: white; font-size: 18px; font-family: Arial, sans-serif; text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); border-radius: 12px; z-index: 10; transition: opacity 0.5s; pointer-events: none; opacity: 0; overflow: hidden; white-space: nowrap; }
-        #overlay.visible { opacity: 1; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 6.4s linear infinite; }
-        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
-        .btn-ui { position: absolute; width: 36px; height: 36px; right: 15px; background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white; border-radius: 10px; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 20; transition: opacity 0.5s; opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden; }
+        .btn-ui { position: absolute; width: 36px; height: 36px; right: 15px; background: rgba(0, 0, 0, 0.4); border: 2px solid white; border-radius: 10px; display: flex; justify-content: center; align-items: center; z-index: 20; opacity: 0; pointer-events: none; }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
+        .ui-icon { width: 70%; height: 70%; }
         #help-btn { top: 15px; } #cta-btn { top: 60px; } #share-btn { top: 105px; } #info-btn { top: 150px; } #flash-btn { top: 195px; }
-        #screenshot-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; border-radius: 15px; z-index: 20; display: none; }
-        #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
-        #zoom-display { position: absolute; bottom: 15px; right: 15px; font-family: 'Press Start 2P', cursive; font-size: 10px; color: white; background: rgba(0, 0, 0, 0.5); padding: 8px; border-radius: 5px; z-index: 20; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
-        #zoom-display.visible { opacity: 1; }
-        .ui-icon { width: 70%; height: 70%; object-fit: contain; }
-        .msg-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; opacity: 0; pointer-events: none; cursor: pointer; user-select: none; }
-        .msg-box.visible { opacity: 1; pointer-events: auto; }
-        #flash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; z-index: 100; pointer-events: none; }
-        .flash-active { animation: flashAnim 0.15s ease-out; }
-        @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+        #screenshot-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); width: 60px; height: 60px; display: none; }
 
-        /* --- INFESTATION MINI GAME --- */
+        /* --- HIDDEN GAME OVERLAY (STAYS INVISIBLE UNTIL TRIGGERED) --- */
         #game-layer {
             position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
             background: #000; z-index: 2000; display: none; overflow: hidden;
-            flex-direction: column; align-items: center; justify-content: center;
         }
         #dev-bg {
             position: absolute; width: 100%; height: 100%;
             background: url('assets/dev.png') center/contain no-repeat;
-            opacity: 1; transition: opacity 2s, transform 1s cubic-bezier(.17,.67,.83,.67);
+            opacity: 1; transition: opacity 2s, transform 1s;
         }
         #game-text {
             position: absolute; top: 15%; width: 100%; text-align: center;
             font-family: 'Press Start 2P', cursive; color: #fff; font-size: 14px; z-index: 2010;
-            line-height: 1.6; text-shadow: 2px 2px #000;
         }
         .red-eye {
-            position: absolute; width: 12px; height: 12px; background: #ff0000;
-            box-shadow: 0 0 15px #ff0000, 0 0 30px #ff0000; border-radius: 50%;
-            z-index: 2005; opacity: 0; transition: opacity 0.5s;
+            position: absolute; width: 12px; height: 12px; background: #f00;
+            box-shadow: 0 0 15px #f00; border-radius: 50%; z-index: 2005; opacity: 0;
         }
-        /* Precisely mapped based on image analysis */
-        #eye-left { top: 35.96%; left: 28.01%; }
-        #eye-right { top: 35.97%; left: 63.11%; }
-
-        .bug-enemy {
-            position: absolute; width: 50px; height: 50px;
-            font-size: 40px; display: flex; align-items: center; justify-content: center;
-            z-index: 2050; cursor: pointer; filter: drop-shadow(0 0 5px #0f0);
-        }
-        .shake-screen { animation: screenShake 0.2s linear infinite; }
-
-        @keyframes screenShake {
-            0% { transform: translate(0,0); }
-            25% { transform: translate(-4px, 4px); }
-            50% { transform: translate(4px, -4px); }
-            75% { transform: translate(-4px, -4px); }
-            100% { transform: translate(0,0); }
-        }
-        .glitch-eye { animation: eyeGlitch 0.15s infinite; }
-        @keyframes eyeGlitch {
-            0% { transform: scale(1); filter: hue-rotate(0deg); }
-            50% { transform: scale(1.3); filter: hue-rotate(180deg); }
-            100% { transform: scale(1); }
-        }
+        #eye-l { top: 35.96%; left: 28.01%; }
+        #eye-r { top: 35.97%; left: 63.11%; }
+        .bug { position: absolute; font-size: 40px; z-index: 2050; cursor: pointer; }
     </style>
 </head>
 <body>
 
-    <div id="flash-overlay"></div>
-
     <div id="scanner-ui">
-        <div class="corner top-left"></div>
-        <div class="corner top-right"></div>
-        <div class="corner bottom-left"></div>
-        <div class="corner bottom-right"></div>
+        <div class="corner top-left"></div><div class="corner top-right"></div>
+        <div class="corner bottom-left"></div><div class="corner bottom-right"></div>
         <div class="scan-line"></div>
     </div>
 
-    <div id="game-layer">
-        <div id="dev-bg"></div>
-        <div id="eye-left" class="red-eye"></div>
-        <div id="eye-right" class="red-eye"></div>
-        <div id="game-text"></div>
-    </div>
-
     <div id="start-screen">
-        <div class="logo-wrapper" id="logo-container">
-            <img src="assets/scanfreakblanklogo.png" class="logo-image" id="main-logo" alt="SCANFREAK AR">
-        </div>
+        <div class="logo-wrapper"><img src="assets/scanfreakblanklogo.png" class="logo-image"></div>
         <div id="loading-container"><div id="loading-bar"></div></div>
         <button id="start-btn">PRESS START</button>
     </div>
 
-    <div id="help-btn" class="btn-ui"><img src="assets/helpicon.png" class="ui-icon" alt="Help"></div>
-    <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank"><img src="assets/storeicon.png" class="ui-icon" alt="Shop"></a>
-    <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon" alt="Share"></div>
-    <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon" alt="Info"></div>
-    <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon" alt="Flash"></div>
-    <div id="screenshot-btn" class="btn-ui"><img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot"></div>
+    <div id="help-btn" class="btn-ui"><img src="assets/helpicon.png" class="ui-icon"></div>
+    <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank"><img src="assets/storeicon.png" class="ui-icon"></a>
+    <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon"></div>
+    <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon"></div>
+    <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon"></div>
+    <div id="screenshot-btn" class="btn-ui"><img src="assets/screenshoticon.png" class="ui-icon"></div>
 
-    <div id="zoom-display">ZOOM: 1.0x</div>
-    <div id="help-message" class="msg-box">Scanner not loading? Check your connection or use Chrome/Safari.</div>
-    <div id="info-message" class="msg-box">info update soon</div>
-    <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px;">flash unavailable</div>
-    <div id="overlay"><span class="marquee-text">Point camera at the SCANFREAK design!</span></div>
+    <div id="game-layer">
+        <div id="dev-bg"></div>
+        <div id="eye-l" class="red-eye"></div>
+        <div id="eye-r" class="red-eye"></div>
+        <div id="game-text"></div>
+    </div>
 
-    <a-scene id="ar-scene"
-        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; uiScanning: no" 
-        color-space="sRGB" renderer="preserveDrawingBuffer: true, antialias: false, alpha: true" 
-        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
+    <a-scene id="ar-scene" mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; uiScanning: no" embedded vr-mode-ui="enabled: false">
         <a-assets>
-            <audio id="sfx-start" src="assets/sfx/start.mp3" preload="auto"></audio>
-            <audio id="sfx-startup" src="assets/sfx/startup.mp3" preload="auto"></audio>
-            <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
-            <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
-            <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
-            <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
-            <audio id="sfx-flash" src="assets/sfx/flash.mp3" preload="auto"></audio>
-            <audio id="sfx-info" src="assets/sfx/info.mp3" preload="auto"></audio>
+            <audio id="sfx-start" src="assets/sfx/start.mp3"></audio>
+            <audio id="sfx-startup" src="assets/sfx/startup.mp3"></audio>
         </a-assets>
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        
         <script>
+            // Generate targets
             for(let i=0; i<=11; i++) {
-                document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
+                document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" position="0 0.15 0.05" material="shader: flat; transparent: true"></a-plane></a-entity>`);
             }
         </script>
-        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
-    const COLLECTION_DATA = { 0: {name:'wizard', folder:'wizard', prefix:'wiz', count:20}, 1:{name:'witch3', folder:'witch3', prefix:'wit3', count:6}, 2:{name:'witch2', folder:'witch2', prefix:'wit2', count:6}, 3:{name:'witch1', folder:'witch1', prefix:'wit1', count:6}, 4:{name:'tealeaf', folder:'tealeaf', prefix:'tea', count:20}, 5:{name:'tarot', folder:'tarot', prefix:'tar', count:78}, 6:{name:'seer', folder:'seer', prefix:'see', count:20}, 7:{name:'portal', folder:'portal', prefix:'por', count:20}, 8:{name:'nostradamus', folder:'nostradamus', prefix:'nos', count:20}, 9:{name:'mystic', folder:'mystic', prefix:'mys', count:20}, 10:{name:'mermaid', folder:'mermaid', prefix:'mer', count:20}, 11:{name:'fortune', folder:'fortune', prefix:'for', count:20} };
+    /* --- THE PERFECT SCANNER CODE --- */
+    const COLLECTION_DATA = { 0:{n:'wizard',f:'wizard',p:'wiz',c:20}, 1:{n:'witch3',f:'witch3',p:'wit3',c:6}, 2:{n:'witch2',f:'witch2',p:'wit2',c:6}, 3:{n:'witch1',f:'witch1',p:'wit1',c:6}, 4:{n:'tealeaf',f:'tealeaf',p:'tea',c:20}, 5:{n:'tarot',f:'tarot',p:'tar',c:78}, 6:{n:'seer',f:'seer',p:'see',c:20}, 7:{n:'portal',f:'portal',p:'por',c:20}, 8:{n:'nostradamus',f:'nostradamus',p:'nos',c:20}, 9:{n:'mystic',f:'mystic',p:'mys',c:20}, 10:{n:'mermaid',f:'mermaid',p:'mer',c:20}, 11:{n:'fortune',f:'fortune',p:'for',c:20} };
 
-    const sceneEl = document.querySelector('a-scene');
-    const startScreen = document.getElementById('start-screen');
-    const startBtn = document.getElementById('start-btn');
-    const scannerUi = document.getElementById('scanner-ui');
-    const overlay = document.getElementById('overlay');
-    const zoomDisplay = document.getElementById('zoom-display');
-    const flashOverlay = document.getElementById('flash-overlay');
-
+    const videoPool = {};
     let isStarted = false;
-    let clickCount = 0;
-    let clickTimer;
-    let gameActive = false;
-    let bugsHit = 0;
-    let misses = 0;
-    let bugInterval = 700;
-    let spawnTimer;
 
-    const gameLayer = document.getElementById('game-layer');
-    const devBg = document.getElementById('dev-bg');
-    const gameText = document.getElementById('game-text');
-    const eyeL = document.getElementById('eye-left');
-    const eyeR = document.getElementById('eye-right');
-
-    const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
-
-    // --- SCANNER LOGIC ---
-    startBtn.addEventListener('click', () => {
-        triggerHaptic(); document.getElementById('sfx-start').play();
+    // Start Sequence
+    document.getElementById('start-btn').addEventListener('click', () => {
+        document.getElementById('sfx-start').play();
         setTimeout(() => document.getElementById('sfx-startup').play(), 2000);
-        startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        scannerUi.classList.add('visible');
-        document.querySelectorAll('.btn-ui').forEach(btn => { if(btn.id !== 'screenshot-btn') btn.classList.add('visible'); });
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('scanner-ui').classList.add('visible');
+        document.querySelectorAll('.btn-ui').forEach(b => { if(b.id !== 'screenshot-btn') b.classList.add('visible'); });
         isStarted = true;
     });
 
-    // --- THE MINI GAME TRIGGER ---
-    scannerUi.addEventListener('click', () => {
-        if (!isStarted || gameActive) return;
-        clickCount++;
-        clearTimeout(clickTimer);
-        clickTimer = setTimeout(() => clickCount = 0, 5000);
-        if (clickCount >= 9) startInfestation();
+    // AR Initialization
+    document.querySelector('a-scene').addEventListener("arReady", () => {
+        document.getElementById('loading-bar').parentElement.style.display = 'none';
+        document.getElementById('start-btn').classList.add('visible');
     });
 
-    function startInfestation() {
-        gameActive = true;
-        clickCount = 0;
-        gameLayer.style.display = 'flex';
-        gameText.innerText = "Dev game unlocked";
-        triggerHaptic();
-
-        // Sequence: Show face -> Fade face -> One eye glich/remains -> Spawn bug
-        setTimeout(() => {
-            devBg.style.opacity = '0.15'; // Original face stays faint
-            eyeR.style.opacity = '1';
-            eyeR.classList.add('glitch-eye');
-            gameText.innerText = "INFESTATION DETECTED";
-            setTimeout(spawnBug, 1800);
-        }, 2000);
-    }
-
-    function spawnBug() {
-        if (!gameActive) return;
-
-        const existingBug = document.querySelector('.bug-enemy');
-        if (existingBug) {
-            handleMiss();
-            existingBug.remove();
-        }
-
-        if (misses >= 3) return;
-
-        const bug = document.createElement('div');
-        bug.className = 'bug-enemy';
-        bug.innerText = '🪲';
-        
-        const x = Math.random() * (window.innerWidth - 80) + 40;
-        const y = Math.random() * (window.innerHeight - 80) + 40;
-        bug.style.left = `${x}px`;
-        bug.style.top = `${y}px`;
-
-        bug.onclick = (e) => {
-            e.stopPropagation();
-            bugsHit++;
-            triggerHaptic();
-            bug.remove();
-            clearTimeout(spawnTimer);
-            bugInterval = Math.max(180, bugInterval * 0.94);
-            spawnBug();
-        };
-
-        gameLayer.appendChild(bug);
-        trackBug(x, y); // Eye follows the bug
-
-        spawnTimer = setTimeout(spawnBug, bugInterval);
-    }
-
-    function handleMiss() {
-        misses++;
-        triggerHaptic();
-        gameLayer.classList.add('shake-screen');
-        eyeR.style.background = '#fff'; // Eye flashes on miss
-        setTimeout(() => {
-            gameLayer.classList.remove('shake-screen');
-            eyeR.style.background = '#f00';
-        }, 200);
-
-        if (misses >= 3) gameOver();
-    }
-
-    function trackBug(bx, by) {
-        const ex = eyeR.offsetLeft + 6;
-        const ey = eyeR.offsetTop + 6;
-        const angle = Math.atan2(by - ey, bx - ex);
-        const dist = 6;
-        eyeR.style.transform = `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist}px)`;
-    }
-
-    function gameOver() {
-        gameActive = false;
-        clearTimeout(spawnTimer);
-        const bug = document.querySelector('.bug-enemy');
-        if (bug) bug.remove();
-
-        // Game Over Sequence
-        gameText.innerHTML = "SYSTEM CRITICAL";
-        devBg.style.opacity = '1';
-        devBg.style.transform = 'scale(2.8)'; // Zoom into face
-        eyeL.style.opacity = '1';
-        eyeR.style.opacity = '1';
-        eyeL.classList.add('glitch-eye');
-        eyeR.classList.add('glitch-eye');
-        
-        setTimeout(() => {
-            gameText.innerHTML = `GAME OVER<br><br>BUGS ELIMINATED: ${bugsHit}`;
-            setTimeout(() => {
-                location.reload(); // Hard exit to scanner after 5s
-            }, 5000);
-        }, 1500);
-    }
-
-    // --- RE-INSERTED ORIGINAL AR LOGIC (UNTYPED FOR BREVITY BUT FUNCTIONAL) ---
-    // (Existing setupTarget, screenshot, share, and flash functions stay identical to your previous perfect code)
+    // Target Logic
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => {
+            const data = COLLECTION_DATA[index];
             const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
-            if(!target) return;
             const plane = target.querySelector('a-plane');
+            const video = document.createElement('video');
+            video.crossOrigin = "anonymous"; video.setAttribute('playsinline', '');
+            videoPool[index] = video;
+
             target.addEventListener('targetFound', () => {
                 if(!isStarted) return;
-                triggerHaptic();
-                scannerUi.classList.remove('visible');
-                overlay.classList.remove('visible');
-                document.getElementById('screenshot-btn').classList.add('visible');
-                // (Logic to play random video from folder goes here)
+                document.getElementById('scanner-ui').classList.remove('visible');
+                document.getElementById('screenshot-btn').style.display = 'flex';
+                const rand = Math.floor(Math.random() * data.c) + 1;
+                video.src = `videos/collection01/${data.f}/${data.p}${rand}.mp4`;
+                video.play();
+                plane.setAttribute('material', {src: video});
+                plane.setAttribute('visible', true);
             });
+
             target.addEventListener('targetLost', () => {
-                scannerUi.classList.add('visible');
-                overlay.classList.add('visible');
-                document.getElementById('screenshot-btn').classList.remove('visible');
+                video.pause();
+                plane.setAttribute('visible', false);
+                document.getElementById('scanner-ui').classList.add('visible');
+                document.getElementById('screenshot-btn').style.display = 'none';
             });
         });
     });
+
+    /* --- THE HIDDEN GAME (ENCAPSULATED) --- */
+    let tapCount = 0;
+    let tapTimer;
+
+    document.getElementById('scanner-ui').addEventListener('click', () => {
+        if (!isStarted) return;
+        tapCount++;
+        clearTimeout(tapTimer);
+        tapTimer = setTimeout(() => tapCount = 0, 4000);
+        if (tapCount >= 9) startTheInfestation();
+    });
+
+    function startTheInfestation() {
+        const layer = document.getElementById('game-layer');
+        const text = document.getElementById('game-text');
+        const bg = document.getElementById('dev-bg');
+        layer.style.display = 'block';
+        text.innerText = "DEV_LINK_ESTABLISHED";
+
+        setTimeout(() => {
+            bg.style.opacity = '0.2';
+            document.getElementById('eye-r').style.opacity = '1';
+            text.innerText = "INFESTATION DETECTED";
+            spawnBug();
+        }, 2000);
+    }
+
+    let hits = 0;
+    let misses = 0;
+    function spawnBug() {
+        if (misses >= 3) { endGame(); return; }
+        const bug = document.createElement('div');
+        bug.className = 'bug';
+        bug.innerText = '🪲';
+        bug.style.left = Math.random() * 80 + 10 + '%';
+        bug.style.top = Math.random() * 80 + 10 + '%';
+        
+        const timeout = setTimeout(() => {
+            bug.remove();
+            misses++;
+            spawnBug();
+        }, 1200);
+
+        bug.onclick = (e) => {
+            e.stopPropagation();
+            clearTimeout(timeout);
+            bug.remove();
+            hits++;
+            spawnBug();
+        };
+        document.getElementById('game-layer').appendChild(bug);
+    }
+
+    function endGame() {
+        document.getElementById('game-text').innerHTML = `PURGE COMPLETE<br>HITS: ${hits}`;
+        document.getElementById('dev-bg').style.transform = 'scale(3)';
+        document.getElementById('eye-l').style.opacity = '1';
+        setTimeout(() => location.reload(), 4000);
+    }
     </script>
 </body>
 </html>
