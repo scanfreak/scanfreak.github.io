@@ -169,7 +169,6 @@
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
-        /* Unified Message Styles */
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
@@ -310,6 +309,7 @@
     let currentScale = 1;
     let initialDist = 0;
     let lastFoundTargetIndex = null;
+    let sessionPersistentTargetIndex = null; // Stores last image found even after target loss
     let isFlashOn = false;
     let track = null;
 
@@ -322,7 +322,6 @@
         msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
     };
 
-    // Flash functionality
     const toggleFlash = async () => {
         triggerHaptic();
         try {
@@ -331,33 +330,21 @@
                 track = stream.getVideoTracks()[0];
             }
             const capabilities = track.getCapabilities();
-            if (!capabilities.torch) {
-                throw new Error('Torch not supported');
-            }
+            if (!capabilities.torch) throw new Error('Torch not supported');
             isFlashOn = !isFlashOn;
-            await track.applyConstraints({
-                advanced: [{ torch: isFlashOn }]
-            });
-        } catch (err) {
-            showMessage(flashErrorMsg);
-        }
+            await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+        } catch (err) { showMessage(flashErrorMsg); }
     };
 
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
-            initialDist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
+            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
         }
     });
 
     window.addEventListener('touchmove', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
-            const dist = Math.hypot(
-                e.touches[0].pageX - e.touches[1].pageX,
-                e.touches[0].pageY - e.touches[1].pageY
-            );
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
             const delta = dist / initialDist;
             initialDist = dist;
             currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
@@ -373,13 +360,7 @@
     const captureFullImage = async () => {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
-                const allVideos = document.querySelectorAll('video');
-                let cameraVideo = null;
-                allVideos.forEach(v => {
-                    if (v.style.position === 'absolute' || (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))) {
-                        cameraVideo = v;
-                    }
-                });
+                const cameraVideo = Array.from(document.querySelectorAll('video')).find(v => v.style.position === 'absolute' || (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v)));
                 const arCanvas = sceneEl.canvas;
                 const outputCanvas = document.createElement('canvas');
                 const ctx = outputCanvas.getContext('2d');
@@ -390,23 +371,16 @@
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
                     if (videoAspect > canvasAspect) {
-                        drawHeight = outputCanvas.height;
-                        drawWidth = drawHeight * videoAspect;
-                        offsetX = -(drawWidth - outputCanvas.width) / 2;
-                        offsetY = 0;
+                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
+                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
                     } else {
-                        drawWidth = outputCanvas.width;
-                        drawHeight = drawWidth / videoAspect;
-                        offsetX = 0;
-                        offsetY = -(drawHeight - outputCanvas.height) / 2;
+                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
+                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
                 }
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-                outputCanvas.toBlob((blob) => {
-                    const file = new File([blob], "scanfreak_ar.png", { type: "image/png" });
-                    resolve(file);
-                }, 'image/png');
+                outputCanvas.toBlob(blob => resolve(new File([blob], "scanfreak_ar.png", { type: "image/png" })), 'image/png');
             });
         });
     };
@@ -418,11 +392,8 @@
         const plane = target.querySelector('a-plane');
         let isTargetVisible = false;
         const video = document.createElement('video');
-        video.crossOrigin = "anonymous";
-        video.loop = false;
-        video.preload = "auto";
-        video.setAttribute('playsinline', ''); 
-        video.style.display = 'none';
+        video.crossOrigin = "anonymous"; video.loop = false; video.preload = "auto";
+        video.setAttribute('playsinline', ''); video.style.display = 'none';
         document.body.appendChild(video);
         videoPool[index] = video;
 
@@ -440,6 +411,7 @@
             triggerHaptic(); 
             isTargetVisible = true;
             lastFoundTargetIndex = index; 
+            sessionPersistentTargetIndex = index; // Persist for sharing
             overlay.classList.remove('visible'); 
             scannerUi.classList.remove('visible');
             document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
@@ -469,13 +441,10 @@
         });
     };
 
-    window.addEventListener('load', () => {
-        Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index));
-    });
+    window.addEventListener('load', () => Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index)));
 
     startBtn.addEventListener('click', () => {
-        triggerHaptic();
-        sfxStart.play();
+        triggerHaptic(); sfxStart.play();
         setTimeout(() => sfxStartup.play(), 2000);
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
@@ -488,19 +457,14 @@
     helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
     infoBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(infoMessage); });
     flashBtn.addEventListener('click', toggleFlash);
-    
-    document.querySelectorAll('.msg-box').forEach(msg => {
-        msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); });
-    });
-
+    document.querySelectorAll('.msg-box').forEach(msg => msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); }));
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
     
     shareBtn.addEventListener('click', async () => {
-        triggerHaptic();
-        sfxShare.currentTime = 0;
-        sfxShare.play();
-        let shareImagePath = lastFoundTargetIndex !== null ? `assets/share/${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
-        let shareFileName = lastFoundTargetIndex !== null ? `${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `scanfreak_logo.png`;
+        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
+        // Uses persistent target index if one was found, otherwise default logo
+        let shareImagePath = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
+        let shareFileName = sessionPersistentTargetIndex !== null ? `${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `scanfreak_logo.png`;
         if (navigator.share) {
             try {
                 const response = await fetch(shareImagePath);
@@ -523,11 +487,8 @@
     });
 
     screenshotBtn.addEventListener('click', async () => {
-        triggerHaptic();
-        sfxScreenshot.currentTime = 0;
-        sfxScreenshot.play();
-        flashOverlay.classList.remove('flash-active');
-        void flashOverlay.offsetWidth; 
+        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
+        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
         setTimeout(async () => {
             if (navigator.share) {
