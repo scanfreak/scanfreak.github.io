@@ -79,13 +79,11 @@
         
         #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
 
-        /* --- UPDATED CUSTOM SCANNER UI --- */
         #scanner-ui {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: 60vw; height: 60vw;
             max-width: 320px; max-height: 320px;
-            /* Opacity of outline set to 0 */
             border: 2px solid rgba(255, 255, 255, 0);
             z-index: 5;
             pointer-events: none;
@@ -105,11 +103,9 @@
         .bottom-right { bottom: -4px; right: -4px; border-left: none; border-top: none; }
 
         .scan-line {
-            position: absolute; width: 100%; 
-            height: 8px;
+            position: absolute; width: 100%; height: 8px;
             background: white; top: 0; left: 0;
             box-shadow: 0 0 20px white;
-            /* Scan line faster by 0.5s (2.5s -> 2.0s) */
             animation: scanMove 2.0s ease-in-out infinite;
         }
 
@@ -118,7 +114,6 @@
             50% { top: 95%; opacity: 1; }
         }
 
-        /* --- OVERLAY & BUTTONS --- */
         #overlay { 
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
             width: 80%; max-width: 400px; padding: 12px 0;
@@ -153,6 +148,8 @@
         #help-btn { top: 15px; }
         #cta-btn { top: 60px; } 
         #share-btn { top: 105px; } 
+        #info-btn { top: 150px; }
+        #flash-btn { top: 195px; }
 
         #screenshot-btn {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
@@ -172,7 +169,8 @@
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
-        #help-message { 
+        /* Unified Message Styles */
+        .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
             font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
@@ -180,7 +178,7 @@
             opacity: 0; pointer-events: none; cursor: pointer;
             user-select: none; 
         }
-        #help-message.visible { opacity: 1; pointer-events: auto; }
+        .msg-box.visible { opacity: 1; pointer-events: auto; }
 
         #flash-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -219,6 +217,12 @@
     <div id="share-btn" class="btn-ui">
         <img src="assets/shareicon.png" class="ui-icon" alt="Share">
     </div>
+    <div id="info-btn" class="btn-ui">
+        <img src="assets/infoicon.png" class="ui-icon" alt="Info">
+    </div>
+    <div id="flash-btn" class="btn-ui">
+        <img src="assets/flashicon.png" class="ui-icon" alt="Flash">
+    </div>
     
     <div id="screenshot-btn" class="btn-ui">
         <img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot">
@@ -226,7 +230,9 @@
 
     <div id="zoom-display">ZOOM: 1.0x</div>
 
-    <div id="help-message">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="help-message" class="msg-box">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="info-message" class="msg-box">info update soon</div>
+    <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px;">flash unavailable</div>
     
     <div id="overlay">
         <span class="marquee-text">Point camera at the SCANFREAK design!</span>
@@ -276,17 +282,20 @@
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
     const scannerUi = document.getElementById('scanner-ui');
-    const loadingContainer = document.getElementById('loading-container');
-    const logoContainer = document.getElementById('logo-container');
-    const mainLogo = document.getElementById('main-logo');
     const overlay = document.getElementById('overlay');
+    const zoomDisplay = document.getElementById('zoom-display');
+    const flashOverlay = document.getElementById('flash-overlay');
+
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
     const shareBtn = document.getElementById('share-btn');
+    const infoBtn = document.getElementById('info-btn');
+    const flashBtn = document.getElementById('flash-btn');
     const screenshotBtn = document.getElementById('screenshot-btn');
+
     const helpMessage = document.getElementById('help-message');
-    const flashOverlay = document.getElementById('flash-overlay');
-    const zoomDisplay = document.getElementById('zoom-display');
+    const infoMessage = document.getElementById('info-message');
+    const flashErrorMsg = document.getElementById('flash-error-message');
 
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
@@ -296,13 +305,43 @@
     const sfxScreenshot = document.getElementById('sfx-screenshot');
 
     let isStarted = false;
-    let helpTimeout;
+    let msgTimeout;
     const videoPool = {}; 
     let currentScale = 1;
     let initialDist = 0;
     let lastFoundTargetIndex = null;
+    let isFlashOn = false;
+    let track = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
+
+    const showMessage = (el) => {
+        document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
+        el.classList.add('visible');
+        clearTimeout(msgTimeout);
+        msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
+    };
+
+    // Flash functionality
+    const toggleFlash = async () => {
+        triggerHaptic();
+        try {
+            if (!track) {
+                const stream = document.querySelector('video').srcObject;
+                track = stream.getVideoTracks()[0];
+            }
+            const capabilities = track.getCapabilities();
+            if (!capabilities.torch) {
+                throw new Error('Torch not supported');
+            }
+            isFlashOn = !isFlashOn;
+            await track.applyConstraints({
+                advanced: [{ torch: isFlashOn }]
+            });
+        } catch (err) {
+            showMessage(flashErrorMsg);
+        }
+    };
 
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
@@ -403,9 +442,8 @@
             lastFoundTargetIndex = index; 
             overlay.classList.remove('visible'); 
             scannerUi.classList.remove('visible');
-            helpMessage.classList.remove('visible');
-            clearTimeout(helpTimeout);
-            [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.remove('visible'));
+            document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
+            [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.remove('visible'));
             screenshotBtn.classList.add('visible'); 
             zoomDisplay.classList.add('visible');
             const rand = Math.floor(Math.random() * data.count) + 1;
@@ -418,16 +456,14 @@
             plane.setAttribute('visible', false);
             screenshotBtn.classList.remove('visible'); 
             zoomDisplay.classList.remove('visible');
-            
             currentScale = 1;
             plane.setAttribute('scale', '1 1 1');
             zoomDisplay.innerText = `ZOOM: 1.0x`;
             lastFoundTargetIndex = null;
-
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 scannerUi.classList.add('visible');
-                [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
+                [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
         });
@@ -444,24 +480,17 @@
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
         scannerUi.classList.add('visible');
-        [helpBtn, ctaBtn, shareBtn].forEach(btn => btn.classList.add('visible'));
+        [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
     });
 
-    helpBtn.addEventListener('click', () => { 
-        triggerHaptic(); 
-        sfxHelp.play(); 
-        const isNowVisible = helpMessage.classList.toggle('visible'); 
-        clearTimeout(helpTimeout);
-        if(isNowVisible) {
-            helpTimeout = setTimeout(() => { helpMessage.classList.remove('visible'); }, 10000);
-        }
-    });
-
-    helpMessage.addEventListener('click', () => {
-        helpMessage.classList.remove('visible');
-        clearTimeout(helpTimeout);
+    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
+    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(infoMessage); });
+    flashBtn.addEventListener('click', toggleFlash);
+    
+    document.querySelectorAll('.msg-box').forEach(msg => {
+        msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); });
     });
 
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
@@ -470,16 +499,8 @@
         triggerHaptic();
         sfxShare.currentTime = 0;
         sfxShare.play();
-        let shareImagePath;
-        let shareFileName;
-        if (lastFoundTargetIndex !== null) {
-            const data = COLLECTION_DATA[lastFoundTargetIndex];
-            shareImagePath = `assets/share/${data.name}_share.png`;
-            shareFileName = `${data.name}_share.png`;
-        } else {
-            shareImagePath = `assets/scanfreakblanklogo.png`;
-            shareFileName = `scanfreak_logo.png`;
-        }
+        let shareImagePath = lastFoundTargetIndex !== null ? `assets/share/${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
+        let shareFileName = lastFoundTargetIndex !== null ? `${COLLECTION_DATA[lastFoundTargetIndex].name}_share.png` : `scanfreak_logo.png`;
         if (navigator.share) {
             try {
                 const response = await fetch(shareImagePath);
@@ -524,9 +545,9 @@
     });
 
     sceneEl.addEventListener("arReady", () => {
-        loadingContainer.style.visibility = 'hidden'; 
-        logoContainer.classList.add('animate-sweep');
-        mainLogo.classList.add('animate-logo');
+        document.getElementById('loading-container').style.visibility = 'hidden'; 
+        document.getElementById('logo-container').classList.add('animate-sweep');
+        document.getElementById('main-logo').classList.add('animate-logo');
         setTimeout(() => { startBtn.classList.add('visible'); }, 3000);
     });
     </script>
