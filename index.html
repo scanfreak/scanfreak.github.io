@@ -312,6 +312,7 @@
     let sessionPersistentTargetIndex = null;
     let isFlashOn = false;
     let track = null;
+    let cameraVideo = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -325,15 +326,20 @@
     const toggleFlash = async () => {
         triggerHaptic();
         try {
-            if (!track) {
-                const stream = document.querySelector('video').srcObject;
-                track = stream.getVideoTracks()[0];
-            }
+            if (!cameraVideo) findCameraVideo();
+            if (!track && cameraVideo) track = cameraVideo.srcObject.getVideoTracks()[0];
             const capabilities = track.getCapabilities();
             if (!capabilities.torch) throw new Error('Torch not supported');
             isFlashOn = !isFlashOn;
             await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
         } catch (err) { showMessage(flashErrorMsg); }
+    };
+
+    const findCameraVideo = () => {
+        cameraVideo = Array.from(document.querySelectorAll('video')).find(v => 
+            v.style.position === 'absolute' || 
+            (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))
+        );
     };
 
     window.addEventListener('touchstart', (e) => {
@@ -357,20 +363,17 @@
         }
     });
 
-    // OPTIMIZED SCREENSHOT FUNCTION
     const captureFullImage = async () => {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
-                const cameraVideo = Array.from(document.querySelectorAll('video')).find(v => v.style.position === 'absolute' || (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v)));
+                if (!cameraVideo) findCameraVideo();
                 const arCanvas = sceneEl.canvas;
                 const outputCanvas = document.createElement('canvas');
                 const ctx = outputCanvas.getContext('2d');
-                
-                // Use lower resolution for faster processing if display is huge
                 outputCanvas.width = arCanvas.width;
                 outputCanvas.height = arCanvas.height;
 
-                if (cameraVideo) {
+                if (cameraVideo && cameraVideo.readyState >= 2) {
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
@@ -390,8 +393,6 @@
                 }
                 
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-                
-                // Faster blob conversion (JPEG is usually faster than PNG)
                 outputCanvas.toBlob(blob => {
                     resolve(new File([blob], "scanfreak_ar.jpg", { type: "image/jpeg" }));
                 }, 'image/jpeg', 0.85);
@@ -434,7 +435,9 @@
             zoomDisplay.classList.add('visible');
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
-            video.load(); 
+            video.load();
+            // Cache camera video source immediately on find to ensure screenshot has it ready
+            if (!cameraVideo) findCameraVideo();
         });
 
         target.addEventListener('targetLost', () => {
@@ -466,6 +469,7 @@
         [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
+        findCameraVideo();
     });
 
     helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
@@ -504,7 +508,6 @@
         flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
         
-        // Execute capture immediately without arbitrary delay
         try {
             const imageFile = await captureFullImage();
             if (navigator.share) {
@@ -523,6 +526,7 @@
         document.getElementById('logo-container').classList.add('animate-sweep');
         document.getElementById('main-logo').classList.add('animate-logo');
         setTimeout(() => { startBtn.classList.add('visible'); }, 3000);
+        findCameraVideo();
     });
     </script>
 </body>
