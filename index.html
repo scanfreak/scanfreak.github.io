@@ -255,7 +255,8 @@
         </a-assets>
 
         <script>
-            for(let i=0; i<=11; i++) {
+            // Generate entities for all 24 targets (0-11 normal, 12-23 mirrored)
+            for(let i=0; i<=23; i++) {
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
         </script>
@@ -264,20 +265,28 @@
     </a-scene>
 
     <script>
-    const COLLECTION_DATA = {
-        0: { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
-        1: { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
-        2: { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
-        3: { name: 'witch1', prefix: 'wit1', count: 6, folder: 'witch1' },
-        4: { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
-        5: { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' },
-        6: { name: 'seer', prefix: 'see', count: 20, folder: 'seer' },
-        7: { name: 'portal', prefix: 'por', count: 20, folder: 'portal' },
-        8: { name: 'nostradamus', prefix: 'nos', count: 20, folder: 'nostradamus' },
-        9: { name: 'mystic', prefix: 'mys', count: 20, folder: 'mystic' },
-        10: { name: 'mermaid', prefix: 'mer', count: 20, folder: 'mermaid' },
-        11: { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
-    };
+    // Standard set of 12 designs
+    const BASE_DATA = [
+        { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
+        { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
+        { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
+        { name: 'witch1', prefix: 'wit1', count: 6, folder: 'witch1' },
+        { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
+        { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' },
+        { name: 'seer', prefix: 'see', count: 20, folder: 'seer' },
+        { name: 'portal', prefix: 'por', count: 20, folder: 'portal' },
+        { name: 'nostradamus', prefix: 'nos', count: 20, folder: 'nostradamus' },
+        { name: 'mystic', prefix: 'mys', count: 20, folder: 'mystic' },
+        { name: 'mermaid', prefix: 'mer', count: 20, folder: 'mermaid' },
+        { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
+    ];
+
+    // Map 0-11 (Normal) and 12-23 (Mirrored) to the same assets
+    const COLLECTION_DATA = {};
+    BASE_DATA.forEach((data, index) => {
+        COLLECTION_DATA[index] = data;           // Normal
+        COLLECTION_DATA[index + 12] = data;      // Mirrored (matches logic of .mind file order)
+    });
 
     const sceneEl = document.querySelector('a-scene');
     const startScreen = document.getElementById('start-screen');
