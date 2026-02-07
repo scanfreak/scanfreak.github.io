@@ -140,7 +140,7 @@
             position: absolute; width: 36px; height: 36px; right: 15px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 20; transition: opacity 0.5s, background-color 0.3s;
+            cursor: pointer; z-index: 20; transition: opacity 0.5s;
             opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden;
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto; }
@@ -154,17 +154,10 @@
         #screenshot-btn {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 60px; height: 60px; border-radius: 15px; z-index: 20;
-            display: none;
+            display: none; transition: transform 0.1s;
         }
         #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
-        
-        /* New recording state for screenshot button */
-        #screenshot-btn.recording {
-            background-color: white !important;
-        }
-        #screenshot-btn.recording .ui-icon {
-            filter: invert(1);
-        }
+        #screenshot-btn.recording { border-color: #ff0000; box-shadow: 0 0 15px #ff0000; transform: translateX(-50%) scale(0.9); }
 
         #zoom-display {
             position: absolute; bottom: 15px; right: 15px;
@@ -174,6 +167,14 @@
             pointer-events: none; opacity: 0; transition: opacity 0.3s;
         }
         #zoom-display.visible { opacity: 1; }
+
+        #record-timer {
+            position: absolute; bottom: 15px; left: 15px;
+            font-family: 'Press Start 2P', cursive; font-size: 10px;
+            color: #ff0000; background: rgba(0, 0, 0, 0.5);
+            padding: 8px; border-radius: 5px; z-index: 20;
+            display: none;
+        }
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
@@ -236,11 +237,12 @@
     </div>
 
     <div id="zoom-display">ZOOM: 1.0x</div>
+    <div id="record-timer">00:00</div>
 
     <div id="help-message" class="msg-box">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     <div id="info-message" class="msg-box">info update soon</div>
+    <div id="browser-warning" class="msg-box">You are using a restricted browser (Instagram/Snapchat). For best AR experience and to save recordings, please open this link in Chrome or Safari!</div>
     <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px;">flash unavailable</div>
-    <div id="browser-message" class="msg-box">In-app browser detected. For best results, tap the (...) and "Open in Chrome/Safari" to enable AR features.</div>
     
     <div id="overlay">
         <span class="marquee-text">Point camera at the SCANFREAK design!</span>
@@ -300,7 +302,9 @@
     const scannerUi = document.getElementById('scanner-ui');
     const overlay = document.getElementById('overlay');
     const zoomDisplay = document.getElementById('zoom-display');
+    const recordTimer = document.getElementById('record-timer');
     const flashOverlay = document.getElementById('flash-overlay');
+    const browserWarning = document.getElementById('browser-warning');
 
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
@@ -312,16 +316,9 @@
     const helpMessage = document.getElementById('help-message');
     const infoMessage = document.getElementById('info-message');
     const flashErrorMsg = document.getElementById('flash-error-message');
-    const browserMessage = document.getElementById('browser-message');
 
-    const sfxStart = document.getElementById('sfx-start');
-    const sfxStartup = document.getElementById('sfx-startup');
-    const sfxHelp = document.getElementById('sfx-help');
-    const sfxStore = document.getElementById('sfx-store');
-    const sfxShare = document.getElementById('sfx-share');
-    const sfxScreenshot = document.getElementById('sfx-screenshot');
-    const sfxFlash = document.getElementById('sfx-flash');
-    const sfxInfo = document.getElementById('sfx-info');
+    const sfxList = ['sfx-start','sfx-startup','sfx-help','sfx-store','sfx-share','sfx-screenshot','sfx-flash','sfx-info'];
+    const sfx = {}; sfxList.forEach(id => sfx[id] = document.getElementById(id));
 
     let isStarted = false;
     let msgTimeout;
@@ -334,31 +331,32 @@
     let track = null;
     let cameraVideo = null;
 
-    // --- Recording State Variables ---
-    let holdTimer = null;
-    let mediaRecorder = null;
+    // Recording Variables
+    let mediaRecorder;
     let recordedChunks = [];
+    let recordStartTime;
+    let recordInterval;
+    let pressTimer;
     let isRecording = false;
-    let audioCtx = null;
-    let audioDest = null;
-    let recordingCanvas = document.createElement('canvas');
-    let recordingCtx = recordingCanvas.getContext('2d');
-    let animationFrameId = null;
+    let audioCtx, audioDest;
 
-    const triggerHaptic = (duration = 50) => { if (navigator.vibrate) navigator.vibrate(duration); };
+    const triggerHaptic = (ms = 50) => { if (navigator.vibrate) navigator.vibrate(ms); };
+
+    // Browser Detection Logic
+    const isRestrictedBrowser = () => {
+        const ua = navigator.userAgent || navigator.vendor || window.opera;
+        return (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1) || (ua.indexOf("Snapchat") > -1) || (ua.indexOf("TikTok") > -1);
+    };
 
     const showMessage = (el) => {
+        if (el.classList.contains('visible')) {
+            el.classList.remove('visible');
+            return;
+        }
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
         el.classList.add('visible');
         clearTimeout(msgTimeout);
-        msgTimeout = setTimeout(() => el.classList.remove('visible'), 6000);
-    };
-
-    // Restricted Browser Detection
-    const checkBrowser = () => {
-        const ua = navigator.userAgent || navigator.vendor || window.opera;
-        const isRestricted = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || (ua.indexOf("Instagram") > -1) || (ua.indexOf("TikTok") > -1) || (ua.indexOf("Snapchat") > -1);
-        if (isRestricted) showMessage(browserMessage);
+        msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
     };
 
     const findCameraVideo = () => {
@@ -370,30 +368,112 @@
 
     const toggleFlash = async () => {
         triggerHaptic();
-        sfxFlash.currentTime = 0;
-        sfxFlash.play();
+        sfx['sfx-flash'].currentTime = 0;
+        sfx['sfx-flash'].play();
         try {
             if (!cameraVideo) findCameraVideo();
             if (!track && cameraVideo) track = cameraVideo.srcObject.getVideoTracks()[0];
             const capabilities = track.getCapabilities();
-            if (!capabilities.torch) throw new Error('Torch not supported');
+            if (!capabilities.torch) throw new Error('No torch');
             isFlashOn = !isFlashOn;
             await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
         } catch (err) { showMessage(flashErrorMsg); }
     };
 
-    // Audio setup for recording
-    const setupAudioContext = () => {
+    // --- Audio Routing for Recording ---
+    const initAudioContext = () => {
         if (audioCtx) return;
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         audioDest = audioCtx.createMediaStreamDestination();
-        
-        const allAudioTags = [sfxStart, sfxStartup, sfxHelp, sfxStore, sfxShare, sfxScreenshot, sfxFlash, sfxInfo];
-        allAudioTags.forEach(tag => {
-            const source = audioCtx.createMediaElementSource(tag);
-            source.connect(audioDest);
+        sfxList.forEach(id => {
+            const source = audioCtx.createMediaElementSource(sfx[id]);
             source.connect(audioCtx.destination);
+            source.connect(audioDest);
         });
+    };
+
+    // --- Recording Logic ---
+    const startRecording = () => {
+        initAudioContext();
+        if(audioCtx.state === 'suspended') audioCtx.resume();
+        
+        isRecording = true;
+        recordedChunks = [];
+        screenshotBtn.classList.add('recording');
+        recordTimer.style.display = 'block';
+        recordStartTime = Date.now();
+        
+        recordInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - recordStartTime) / 1000);
+            const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            const s = String(elapsed % 60).padStart(2, '0');
+            recordTimer.innerText = `${m}:${s}`;
+        }, 1000);
+
+        const canvas = sceneEl.canvas;
+        const canvasStream = canvas.captureStream(30);
+        const combinedStream = new MediaStream([
+            ...canvasStream.getVideoTracks(),
+            ...audioDest.stream.getAudioTracks()
+        ]);
+
+        const types = ['video/mp4;codecs=h264', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
+        const supportedType = types.find(type => MediaRecorder.isTypeSupported(type));
+
+        mediaRecorder = new MediaRecorder(combinedStream, {
+            mimeType: supportedType,
+            videoBitsPerSecond: 2500000
+        });
+
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        
+        mediaRecorder.onstop = async () => {
+            const extension = supportedType.includes('mp4') ? 'mp4' : 'webm';
+            const blob = new Blob(recordedChunks, { type: supportedType });
+            const file = new File([blob], `scanfreak_ar_${Date.now()}.${extension}`, { type: supportedType });
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        files: [file],
+                        title: 'SCANFREAK AR',
+                        text: 'The future is now - level up your reality! 👀'
+                    });
+                } catch (err) { console.error("Share failed", err); }
+            }
+        };
+
+        mediaRecorder.start();
+        triggerHaptic(100);
+        sfx['sfx-flash'].currentTime = 0;
+        sfx['sfx-flash'].play();
+    };
+
+    const stopRecording = () => {
+        if (!isRecording) return;
+        isRecording = false;
+        clearInterval(recordInterval);
+        screenshotBtn.classList.remove('recording');
+        recordTimer.style.display = 'none';
+        mediaRecorder.stop();
+    };
+
+    // --- Screenshot Logic ---
+    const takeScreenshot = async () => {
+        sfx['sfx-screenshot'].currentTime = 0; sfx['sfx-screenshot'].play();
+        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
+        flashOverlay.classList.add('flash-active');
+        
+        try {
+            const imageFile = await captureFullImage();
+            if (navigator.share) {
+                await navigator.share({
+                    title: 'SCANFREAK AR',
+                    text: "Level up your reality! 👀",
+                    files: [imageFile]
+                });
+            }
+        } catch (err) { console.log("Screenshot failed", err); }
     };
 
     const captureFullImage = async () => {
@@ -410,200 +490,89 @@
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
-                    
                     if (videoAspect > canvasAspect) {
-                        drawHeight = outputCanvas.height;
-                        drawWidth = drawHeight * videoAspect;
-                        offsetX = -(drawWidth - outputCanvas.width) / 2;
-                        offsetY = 0;
+                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
+                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
                     } else {
-                        drawWidth = outputCanvas.width;
-                        drawHeight = drawWidth / videoAspect;
-                        offsetX = 0;
-                        offsetY = -(drawHeight - outputCanvas.height) / 2;
+                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
+                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
                 }
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
                 outputCanvas.toBlob(blob => {
                     resolve(new File([blob], "scanfreak_ar.jpg", { type: "image/jpeg" }));
-                }, 'image/jpeg', 0.85);
+                }, 'image/jpeg', 0.9);
             });
         });
     };
 
-    // --- MediaRecorder Functions ---
-    const startRecording = () => {
-        if (isRecording) return;
-        isRecording = true;
-        recordedChunks = [];
-        screenshotBtn.classList.add('recording');
-        triggerHaptic(100);
-        sfxFlash.currentTime = 0;
-        sfxFlash.play();
-
-        const arCanvas = sceneEl.canvas;
-        recordingCanvas.width = arCanvas.width;
-        recordingCanvas.height = arCanvas.height;
-
-        const drawFrame = () => {
-            if (!cameraVideo) findCameraVideo();
-            const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
-            const canvasAspect = recordingCanvas.width / recordingCanvas.height;
-            let drawWidth, drawHeight, offsetX, offsetY;
-            
-            if (videoAspect > canvasAspect) {
-                drawHeight = recordingCanvas.height;
-                drawWidth = drawHeight * videoAspect;
-                offsetX = -(drawWidth - recordingCanvas.width) / 2;
-                offsetY = 0;
-            } else {
-                drawWidth = recordingCanvas.width;
-                drawHeight = drawWidth / videoAspect;
-                offsetX = 0;
-                offsetY = -(drawHeight - recordingCanvas.height) / 2;
-            }
-            recordingCtx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
-            recordingCtx.drawImage(arCanvas, 0, 0, recordingCanvas.width, recordingCanvas.height);
-            animationFrameId = requestAnimationFrame(drawFrame);
-        };
-        drawFrame();
-
-        const canvasStream = recordingCanvas.captureStream(30);
-        setupAudioContext();
-        
-        const tracks = [...canvasStream.getVideoTracks()];
-        if (audioDest.stream.getAudioTracks().length > 0) {
-            tracks.push(audioDest.stream.getAudioTracks()[0]);
-        }
-        
-        const combinedStream = new MediaStream(tracks);
-        const types = ['video/mp4;codecs=h264', 'video/webm;codecs=vp9', 'video/webm;codecs=vp8', 'video/webm'];
-        const supportedType = types.find(type => MediaRecorder.isTypeSupported(type));
-
-        mediaRecorder = new MediaRecorder(combinedStream, {
-            mimeType: supportedType,
-            videoBitsPerSecond: 2500000
-        });
-
-        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        
-        mediaRecorder.onstop = async () => {
-            const extension = supportedType.includes('mp4') ? 'mp4' : 'webm';
-            const blob = new Blob(recordedChunks, { type: supportedType });
-            const file = new File([blob], `scanfreak_ar.${extension}`, { type: supportedType });
-            
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        files: [file],
-                        title: 'SCANFREAK AR',
-                        text: 'The future is now - level up your reality or become obsolete! 👀'
-                    });
-                } catch (err) { console.error("Video share failed", err); }
-            }
-        };
-
-        mediaRecorder.start();
-    };
-
-    const stopRecording = () => {
-        if (!isRecording) return;
-        isRecording = false;
-        screenshotBtn.classList.remove('recording');
-        cancelAnimationFrame(animationFrameId);
-        mediaRecorder.stop();
-    };
-
-    // --- Hold/Tap Logic ---
-    screenshotBtn.addEventListener('pointerdown', (e) => {
+    // --- UI Event Listeners ---
+    screenshotBtn.addEventListener('touchstart', (e) => {
         e.preventDefault();
-        holdTimer = setTimeout(() => {
-            holdTimer = null;
-            startRecording();
-        }, 2000);
+        pressTimer = setTimeout(startRecording, 2000);
     });
 
-    screenshotBtn.addEventListener('pointerup', async (e) => {
+    screenshotBtn.addEventListener('touchend', (e) => {
         e.preventDefault();
-        if (holdTimer) {
-            clearTimeout(holdTimer);
-            holdTimer = null;
-            // Short tap: Do standard screenshot
-            triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
-            flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
-            flashOverlay.classList.add('flash-active');
-            try {
-                const imageFile = await captureFullImage();
-                if (navigator.share) {
-                    await navigator.share({
-                        title: 'SCANFREAK AR',
-                        text: "The future is now - level up your reality or become obsolete! 👀",
-                        files: [imageFile]
-                    });
-                }
-            } catch (err) { console.log("Screenshot share failed", err); }
-        } else if (isRecording) {
-            stopRecording();
-        }
-    });
-
-    screenshotBtn.addEventListener('pointerleave', () => {
-        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
+        clearTimeout(pressTimer);
         if (isRecording) stopRecording();
+        else takeScreenshot();
     });
 
+    helpBtn.addEventListener('click', () => { triggerHaptic(); sfx['sfx-help'].play(); showMessage(helpMessage); });
+    infoBtn.addEventListener('click', () => { triggerHaptic(); sfx['sfx-info'].play(); showMessage(infoMessage); });
+    flashBtn.addEventListener('click', toggleFlash);
+    ctaBtn.addEventListener('click', () => { triggerHaptic(); sfx['sfx-store'].play(); });
+
+    shareBtn.addEventListener('click', async () => {
+        triggerHaptic(); sfx['sfx-share'].play();
+        let path = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
+        try {
+            const response = await fetch(path);
+            const blob = await response.blob();
+            const file = new File([blob], 'share.png', { type: 'image/png' });
+            await navigator.share({ title: 'SCANFREAK AR', files: [file], url: 'https://scanfreak.myshopify.com' });
+        } catch (e) { navigator.share({ title: 'SCANFREAK AR', url: 'https://scanfreak.myshopify.com' }); }
+    });
+
+    // --- AR Logic ---
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
         if (!target) return;
         const plane = target.querySelector('a-plane');
-        let isTargetVisible = false;
+        let isVisible = false;
         const video = document.createElement('video');
-        video.crossOrigin = "anonymous"; video.loop = false; video.preload = "auto";
-        video.setAttribute('playsinline', ''); video.style.display = 'none';
+        video.crossOrigin = "anonymous"; video.loop = false; video.setAttribute('playsinline', '');
         document.body.appendChild(video);
         videoPool[index] = video;
 
         video.onloadeddata = () => {
-            if (isTargetVisible) {
+            if (isVisible) {
                 plane.setAttribute('height', video.videoHeight / video.videoWidth);
                 plane.setAttribute('material', {src: video, shader: 'flat'});
                 plane.setAttribute('visible', true);
-                video.play().catch(e => console.log(e));
+                video.play();
             }
         };
 
         target.addEventListener('targetFound', () => {
-            if (!isStarted) return; 
-            triggerHaptic(); 
-            isTargetVisible = true;
-            lastFoundTargetIndex = index; 
-            sessionPersistentTargetIndex = index;
-            overlay.classList.remove('visible'); 
-            scannerUi.classList.remove('visible');
-            document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
-            [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.remove('visible'));
-            screenshotBtn.classList.add('visible'); 
-            zoomDisplay.classList.add('visible');
+            if (!isStarted) return;
+            triggerHaptic();
+            isVisible = true; lastFoundTargetIndex = index; sessionPersistentTargetIndex = index;
+            [overlay, scannerUi, helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(el => el.classList.remove('visible'));
+            screenshotBtn.classList.add('visible'); zoomDisplay.classList.add('visible');
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load();
         });
 
         target.addEventListener('targetLost', () => {
-            isTargetVisible = false;
-            plane.setAttribute('visible', false);
-            screenshotBtn.classList.remove('visible'); 
-            zoomDisplay.classList.remove('visible');
-            currentScale = 1;
-            plane.setAttribute('scale', '1 1 1');
-            zoomDisplay.innerText = `ZOOM: 1.0x`;
-            lastFoundTargetIndex = null;
+            isVisible = false; plane.setAttribute('visible', false);
+            screenshotBtn.classList.remove('visible'); zoomDisplay.classList.remove('visible');
             if (isStarted) {
-                overlay.classList.add('visible'); 
-                scannerUi.classList.add('visible');
-                [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
+                [overlay, scannerUi, helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(el => el.classList.add('visible'));
             }
             video.pause();
         });
@@ -611,51 +580,16 @@
 
     window.addEventListener('load', () => {
         Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index));
-        checkBrowser();
+        if (isRestrictedBrowser()) showMessage(browserWarning);
     });
 
     startBtn.addEventListener('click', () => {
-        triggerHaptic(); sfxStart.play();
-        setTimeout(() => sfxStartup.play(), 2000);
+        triggerHaptic(); sfx['sfx-start'].play();
+        setTimeout(() => sfx['sfx-startup'].play(), 2000);
         startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        scannerUi.classList.add('visible');
-        [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
+        [overlay, scannerUi, helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(el => el.classList.add('visible'));
         isStarted = true;
-        Object.values(videoPool).forEach(v => v.load());
         findCameraVideo();
-    });
-
-    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
-    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(infoMessage); });
-    flashBtn.addEventListener('click', toggleFlash);
-    ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
-    
-    document.querySelectorAll('.msg-box').forEach(msg => msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); }));
-
-    shareBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
-        let shareImagePath = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
-        let shareFileName = sessionPersistentTargetIndex !== null ? `${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `scanfreak_logo.png`;
-        if (navigator.share) {
-            try {
-                const response = await fetch(shareImagePath);
-                const blob = await response.blob();
-                const file = new File([blob], shareFileName, { type: 'image/png' });
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [file]
-                });
-            } catch (err) { 
-                navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com'
-                });
-            }
-        }
     });
 
     sceneEl.addEventListener("arReady", () => {
@@ -663,7 +597,6 @@
         document.getElementById('logo-container').classList.add('animate-sweep');
         document.getElementById('main-logo').classList.add('animate-logo');
         setTimeout(() => { startBtn.classList.add('visible'); }, 3000);
-        findCameraVideo();
     });
     </script>
 </body>
