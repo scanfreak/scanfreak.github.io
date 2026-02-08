@@ -13,7 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        /* FIX 1: background-color removed to reveal camera feed */
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; touch-action: none; }
         
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; z-index: 1; }
@@ -212,7 +211,7 @@
         }
         #browser-warning.show { display: flex; }
 
-        /* FIX 2: Hidden canvas for recording */
+        /* Hidden canvas for recording */
         #recording-canvas { position: absolute; top: 0; left: 0; visibility: hidden; z-index: -999; pointer-events: none; }
     </style>
 </head>
@@ -296,7 +295,6 @@
         </a-assets>
 
         <script>
-            // Generate entities for all 24 targets (0-11 normal, 12-23 mirrored)
             for(let i=0; i<=23; i++) {
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
@@ -306,7 +304,6 @@
     </a-scene>
 
     <script>
-    // --- Data Configuration ---
     const BASE_DATA = [
         { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
         { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
@@ -328,7 +325,6 @@
         COLLECTION_DATA[index + 12] = data; 
     });
 
-    // --- DOM Elements ---
     const sceneEl = document.querySelector('a-scene');
     const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
@@ -346,20 +342,16 @@
     const screenshotBtn = document.getElementById('screenshot-btn');
     const recTimerUi = document.getElementById('rec-timer');
     const recTimeText = document.getElementById('rec-time-text');
-    
-    // Hidden canvas for recording
     const recordingCanvas = document.getElementById('recording-canvas');
 
     const helpMessage = document.getElementById('help-message');
     const infoMessage = document.getElementById('info-message');
     const flashErrorMsg = document.getElementById('flash-error-message');
 
-    // --- Audio Elements ---
     const sfxList = ['start', 'startup', 'help', 'store', 'share', 'screenshot', 'flash', 'info'];
     const sfx = {};
     sfxList.forEach(id => sfx[id] = document.getElementById(`sfx-${id}`));
 
-    // --- State Variables ---
     let isStarted = false;
     let msgTimeout;
     const videoPool = {}; 
@@ -371,7 +363,6 @@
     let track = null;
     let cameraVideo = null;
     
-    // --- Recorder Variables ---
     let mediaRecorder = null;
     let recordedChunks = [];
     let isRecording = false;
@@ -383,24 +374,20 @@
     let compositeCtx = null;
     let animationFrameId = null;
 
-    // --- Utils ---
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // --- In-App Browser Detection ---
     const detectInAppBrowser = () => {
         const ua = navigator.userAgent || navigator.vendor || window.opera;
         const isInstagram = (ua.indexOf('Instagram') > -1);
         const isFacebook = (ua.indexOf('FBAN') > -1) || (ua.indexOf('FBAV') > -1);
         const isTikTok = (ua.indexOf('TikTok') > -1);
         const isSnapchat = (ua.indexOf('Snapchat') > -1);
-        
         if (isInstagram || isTikTok || isSnapchat || isFacebook) {
             browserWarning.classList.add('show');
         }
     };
     detectInAppBrowser();
 
-    // --- Message Logic with Toggle ---
     const showMessage = (el) => {
         if (el.classList.contains('visible')) {
             el.classList.remove('visible');
@@ -420,7 +407,6 @@
         );
     };
 
-    // --- Audio System Setup (For Recording) ---
     const setupAudioContext = () => {
         if (audioCtx) return; 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
@@ -430,8 +416,8 @@
         Object.values(sfx).forEach(audioEl => {
             if (!audioEl._sourceNode) {
                 const source = audioCtx.createMediaElementSource(audioEl);
-                source.connect(audioCtx.destination); // Output to speakers
-                source.connect(audioDest); // Output to recorder
+                source.connect(audioCtx.destination);
+                source.connect(audioDest);
                 audioEl._sourceNode = source;
             }
         });
@@ -450,7 +436,6 @@
         } catch (err) { showMessage(flashErrorMsg); }
     };
 
-    // --- Zoom Logic ---
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
             initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
@@ -472,7 +457,6 @@
         }
     });
 
-    // --- Image Capture (Single Screenshot) ---
     const captureFullImage = async () => {
         return new Promise((resolve) => {
             requestAnimationFrame(() => {
@@ -510,20 +494,16 @@
         });
     };
 
-    // --- Video Recording Logic ---
     const startRecording = () => {
         if (isRecording) return;
         if (!cameraVideo) findCameraVideo();
 
-        // Setup Canvas in DOM (required for iOS captureStream)
         recordingCanvas.width = sceneEl.canvas.width;
         recordingCanvas.height = sceneEl.canvas.height;
         compositeCtx = recordingCanvas.getContext('2d');
 
         const drawLoop = () => {
             if (!isRecording) return;
-            
-            // Draw Camera
             if (cameraVideo && cameraVideo.readyState >= 2) {
                 const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                 const canvasAspect = recordingCanvas.width / recordingCanvas.height;
@@ -537,21 +517,17 @@
                 }
                 compositeCtx.drawImage(cameraVideo, ox, oy, dw, dh);
             }
-            // Draw AR Scene
             compositeCtx.drawImage(sceneEl.canvas, 0, 0);
-            
             animationFrameId = requestAnimationFrame(drawLoop);
         };
         
         isRecording = true;
         drawLoop();
 
-        // Capture Stream
         const canvasStream = recordingCanvas.captureStream(30); 
         const audioStream = audioDest.stream;
         const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
 
-        // MimeType Selection Priority
         let selectedType = '';
         if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264')) {
             selectedType = 'video/mp4;codecs=h264';
@@ -565,15 +541,13 @@
         try {
             mediaRecorder = selectedType ? new MediaRecorder(combinedStream, { mimeType: selectedType }) : new MediaRecorder(combinedStream);
         } catch (e) {
-            console.error("MediaRecorder Init Failed:", e);
-            mediaRecorder = new MediaRecorder(combinedStream); // Fallback to default
+            mediaRecorder = new MediaRecorder(combinedStream);
         }
 
         mediaRecorder.ondataavailable = (event) => {
             if (event.data && event.data.size > 0) recordedChunks.push(event.data);
         };
 
-        // Start Recording
         mediaRecorder.start();
         
         screenshotBtn.classList.add('recording');
@@ -587,31 +561,38 @@
         }, 1000);
     };
 
-    const stopRecording = async () => {
+    const stopRecording = () => {
         if (!isRecording || !mediaRecorder) return;
         
-        // Stop UI
+        // Immediate UI updates
         clearInterval(recInterval);
         cancelAnimationFrame(animationFrameId);
         screenshotBtn.classList.remove('recording');
         recTimerUi.classList.remove('visible');
         recTimeText.innerText = "00:00";
-        isRecording = false; // Flag must be false before mediaRecorder stops to prevent loop issues
+        isRecording = false;
 
         mediaRecorder.onstop = async () => {
             const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
             const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
             const file = new File([blob], `scanfreak_ar_video.${ext}`, { type: mediaRecorder.mimeType });
 
-            if (navigator.share) {
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                 try {
                     await navigator.share({
                         title: 'SCANFREAK MERCH',
                         text: 'SCANFREAK MERCH - Check this out!',
                         files: [file]
                     });
-                } catch (err) { console.log('Share canceled or failed', err); }
+                } catch (err) { 
+                    // Share failed/cancelled, trigger download as backup
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `scanfreak_capture.${ext}`;
+                    a.click();
+                }
             } else {
+                // Share not supported, trigger download
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = `scanfreak_capture.${ext}`;
@@ -623,18 +604,19 @@
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
     };
 
-    // --- Interaction Handlers for Screenshot/Record ---
     const handleBtnStart = (e) => {
         e.preventDefault(); 
         triggerHaptic();
         
+        // Reset check
+        if (holdTimeout) clearTimeout(holdTimeout);
+
         holdTimeout = setTimeout(() => {
-            // 1.5 Seconds reached - Start Recording
             sfx.flash.currentTime = 0; sfx.flash.play();
             triggerHaptic();
             if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
             startRecording();
-            holdTimeout = null; // Mark as handled (recording started)
+            holdTimeout = null; 
         }, 1500);
     };
 
@@ -652,7 +634,7 @@
             
             try {
                 const imageFile = await captureFullImage();
-                if (navigator.share) {
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
                     await navigator.share({
                         title: 'SCANFREAK AR',
                         text: "The future is now - level up your reality or become obsolete! 👀",
@@ -663,20 +645,25 @@
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(imageFile); a.download = 'scanfreak.jpg'; a.click();
                 }
-            } catch (err) { console.log("Screenshot share failed", err); }
+            } catch (err) { console.log("Screenshot error", err); }
 
         } else {
             // Released AFTER 1.5s -> Stop Recording
+            triggerHaptic(); // Fix 1: Haptic on release
             stopRecording();
         }
     };
 
-    screenshotBtn.addEventListener('touchstart', handleBtnStart);
-    screenshotBtn.addEventListener('touchend', handleBtnEnd);
-    screenshotBtn.addEventListener('mousedown', handleBtnStart); // For testing
-    screenshotBtn.addEventListener('mouseup', handleBtnEnd);     // For testing
+    // Use touch events primarily
+    screenshotBtn.addEventListener('touchstart', handleBtnStart, {passive: false});
+    screenshotBtn.addEventListener('touchend', handleBtnEnd, {passive: false});
+    
+    // Add mouse listeners for desktop testing (avoiding double triggers on touch devices)
+    if (!('ontouchstart' in window)) {
+        screenshotBtn.addEventListener('mousedown', handleBtnStart);
+        screenshotBtn.addEventListener('mouseup', handleBtnEnd);
+    }
 
-    // --- MindAR Logic ---
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
@@ -738,7 +725,7 @@
 
     startBtn.addEventListener('click', () => {
         triggerHaptic(); 
-        setupAudioContext(); // Initialize Audio
+        setupAudioContext(); 
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         
         sfx.start.play();
