@@ -188,8 +188,8 @@
 
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
-            font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
+            width: 60%; max-width: 300px; padding: 20px; text-align: center; color: white; 
+            font-size: 16px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
             border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; cursor: pointer;
             user-select: none; 
@@ -328,7 +328,6 @@
     const overlay = document.getElementById('overlay');
     const zoomDisplay = document.getElementById('zoom-display');
     const flashOverlay = document.getElementById('flash-overlay');
-    const browserWarning = document.getElementById('browser-warning');
     const helpBtn = document.getElementById('help-btn');
     const ctaBtn = document.getElementById('cta-btn');
     const shareBtn = document.getElementById('share-btn');
@@ -349,7 +348,7 @@
     let isStarted = false;
     let msgTimeout;
     const videoPool = {}; 
-    const videoNodes = {}; // To track audio nodes for each video
+    const videoNodes = {};
     let currentScale = 1;
     let initialDist = 0;
     let lastFoundTargetIndex = null;
@@ -370,6 +369,18 @@
     let animationFrameId = null;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
+
+    const showMessage = (msgEl) => {
+        document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
+        if (msgTimeout) clearTimeout(msgTimeout);
+        msgEl.classList.add('visible');
+        msgTimeout = setTimeout(() => msgEl.classList.remove('visible'), 5000);
+    };
+
+    // Close boxes on click
+    document.querySelectorAll('.msg-box').forEach(box => {
+        box.addEventListener('click', () => box.classList.remove('visible'));
+    });
 
     const setupAudioContext = () => {
         if (audioCtx) return; 
@@ -423,7 +434,7 @@
                     ox = -(dw - recordingCanvas.width) / 2; oy = 0;
                 } else {
                     dw = recordingCanvas.width; dh = dw / videoAspect;
-                    ox = 0; oy = -(dh - recordingCanvas.height) / 2;
+                    ox = 0; oy = -(dh - outerHeight) / 2;
                 }
                 compositeCtx.drawImage(cameraVideo, ox, oy, dw, dh);
             }
@@ -439,6 +450,7 @@
         const tracks = [...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()];
         const combinedStream = new MediaStream(tracks);
 
+        // Codec strictly set for WebM compatibility with Audio on Android
         let options = { mimeType: 'video/webm;codecs=vp8,opus' };
         if (!MediaRecorder.isTypeSupported(options.mimeType)) {
             options = { mimeType: 'video/mp4' };
@@ -449,7 +461,7 @@
         try {
             mediaRecorder = new MediaRecorder(combinedStream, options);
             mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-            mediaRecorder.start(100); 
+            mediaRecorder.start(10); 
             
             screenshotBtn.classList.add('recording');
             recTimerUi.classList.add('visible');
@@ -480,12 +492,12 @@
                 try {
                     await navigator.share({ title: 'SCANFREAK', files: [file] });
                 } catch (err) { 
-                    if(confirm("Sharing failed. Would you like to save the video to your device?")) {
+                    if(confirm("Sharing unavailable. Save video?")) {
                         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
                     }
                 }
             } else {
-                if(confirm("Video ready! Save to device?")) {
+                if(confirm("Video ready! Save?")) {
                     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = file.name; a.click();
                 }
             }
@@ -516,14 +528,15 @@
             flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
             flashOverlay.classList.add('flash-active');
             const imageFile = await captureFullImage();
+            
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [imageFile] })) {
                 try { await navigator.share({ title: 'SCANFREAK', files: [imageFile] }); } catch(e) { 
-                    if(confirm("Save screenshot?")) {
+                    if(confirm("Save photo?")) {
                         const a = document.createElement('a'); a.href = URL.createObjectURL(imageFile); a.download = 'scanfreak.jpg'; a.click();
                     }
                 }
             } else {
-                if(confirm("Save screenshot?")) {
+                if(confirm("Save photo?")) {
                     const a = document.createElement('a'); a.href = URL.createObjectURL(imageFile); a.download = 'scanfreak.jpg'; a.click();
                 }
             }
@@ -618,6 +631,7 @@
     });
 
     window.addEventListener('load', () => Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index)));
+    
     flashBtn.addEventListener('click', async () => {
         triggerHaptic(); sfx.flash.play();
         try {
@@ -631,6 +645,7 @@
     helpBtn.addEventListener('click', () => { triggerHaptic(); sfx.help.play(); showMessage(helpMessage); });
     infoBtn.addEventListener('click', () => { triggerHaptic(); sfx.info.play(); showMessage(infoMessage); });
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfx.store.play(); });
+    
     shareBtn.addEventListener('click', async () => {
         triggerHaptic(); sfx.share.play();
         let path = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
