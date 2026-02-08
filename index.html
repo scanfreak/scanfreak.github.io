@@ -253,6 +253,15 @@
         <span class="marquee-text">Point camera at the SCANFREAK design!</span>
     </div>
 
+    <audio id="sfx-start" src="assets/sfx/start.mp3" preload="auto"></audio>
+    <audio id="sfx-startup" src="assets/sfx/startup.mp3" preload="auto"></audio>
+    <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
+    <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
+    <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
+    <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
+    <audio id="sfx-flash" src="assets/sfx/flash.mp3" preload="auto"></audio>
+    <audio id="sfx-info" src="assets/sfx/info.mp3" preload="auto"></audio>
+
     <a-scene id="ar-scene"
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; uiScanning: no" 
         color-space="sRGB" 
@@ -260,15 +269,7 @@
         vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
         <a-assets>
-            <audio id="sfx-start" src="assets/sfx/start.mp3" preload="auto"></audio>
-            <audio id="sfx-startup" src="assets/sfx/startup.mp3" preload="auto"></audio>
-            <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
-            <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
-            <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
-            <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
-            <audio id="sfx-flash" src="assets/sfx/flash.mp3" preload="auto"></audio>
-            <audio id="sfx-info" src="assets/sfx/info.mp3" preload="auto"></audio>
-        </a-assets>
+            </a-assets>
 
         <script>
             // Generate entities for all 24 targets (0-11 normal, 12-23 mirrored)
@@ -301,7 +302,7 @@
     const COLLECTION_DATA = {};
     BASE_DATA.forEach((data, index) => {
         COLLECTION_DATA[index] = data;           // Normal
-        COLLECTION_DATA[index + 12] = data;      // Mirrored (matches logic of .mind file order)
+        COLLECTION_DATA[index + 12] = data;      // Mirrored
     });
 
     const sceneEl = document.querySelector('a-scene');
@@ -348,6 +349,7 @@
     let mediaRecorder;
     let recordedChunks = [];
     let isRecording = false;
+    let animationFrameId;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -368,7 +370,7 @@
     const toggleFlash = async () => {
         triggerHaptic();
         sfxFlash.currentTime = 0;
-        sfxFlash.play();
+        sfxFlash.play().catch(e => console.log(e));
         try {
             if (!cameraVideo) findCameraVideo();
             if (!track && cameraVideo) track = cameraVideo.srcObject.getVideoTracks()[0];
@@ -445,6 +447,8 @@
         let isTargetVisible = false;
         const video = document.createElement('video');
         video.crossOrigin = "anonymous"; video.loop = false; video.preload = "auto";
+        // Explicitly unmute target videos
+        video.muted = false;
         video.setAttribute('playsinline', ''); video.style.display = 'none';
         document.body.appendChild(video);
         videoPool[index] = video;
@@ -467,7 +471,6 @@
             overlay.classList.remove('visible'); 
             scannerUi.classList.remove('visible');
             document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
-            // Added recordBtn to the list of elements that hide
             [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, recordBtn].forEach(btn => btn.classList.remove('visible'));
             screenshotBtn.classList.add('visible'); 
             zoomDisplay.classList.add('visible');
@@ -489,7 +492,6 @@
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 scannerUi.classList.add('visible');
-                // Added recordBtn to the list of elements that show
                 [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, recordBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
@@ -499,139 +501,13 @@
     window.addEventListener('load', () => Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index)));
 
     startBtn.addEventListener('click', () => {
-        triggerHaptic(); sfxStart.play();
-        setTimeout(() => sfxStartup.play(), 2000);
-        startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        scannerUi.classList.add('visible');
-        // Added recordBtn to the list of elements that show on start
-        [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, recordBtn].forEach(btn => btn.classList.add('visible'));
-        isStarted = true;
-        Object.values(videoPool).forEach(v => v.load());
-        findCameraVideo();
-    });
-
-    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
-    
-    infoBtn.addEventListener('click', () => { 
         triggerHaptic(); 
-        sfxInfo.currentTime = 0; 
-        sfxInfo.play(); 
-        showMessage(infoMessage); 
-    });
-
-    flashBtn.addEventListener('click', toggleFlash);
-
-    // Screen Recording Logic
-    recordBtn.addEventListener('click', async () => {
-        triggerHaptic();
-        sfxScreenshot.currentTime = 0; 
-        sfxScreenshot.play();
-
-        if (!isRecording) {
-            // Start Recording
-            try {
-                const stream = sceneEl.canvas.captureStream(30); // Capture the A-Frame canvas at 30fps
-                
-                // If we could mix in the cameraVideo stream audio here we would, but keeping it simple for stability
-                // Note: Depending on browser/MindAR version, this may capture black background + 3D models only 
-                
-                recordedChunks = [];
-                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
-                
-                mediaRecorder.ondataavailable = (event) => {
-                    if (event.data.size > 0) {
-                        recordedChunks.push(event.data);
-                    }
-                };
-
-                mediaRecorder.onstop = () => {
-                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.style.display = 'none';
-                    a.href = url;
-                    a.download = 'scanfreak_recording.webm';
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                    }, 100);
-                };
-
-                mediaRecorder.start();
-                isRecording = true;
-                recordBtn.classList.add('recording');
-            } catch (e) {
-                console.error("Recording failed", e);
-                // Fallback for browsers that don't support captureStream seamlessly
-                alert("Screen recording not supported in this browser. Please use your phone's native screen recorder.");
-            }
-        } else {
-            // Stop Recording
-            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-                mediaRecorder.stop();
-            }
-            isRecording = false;
-            recordBtn.classList.remove('recording');
-        }
-    });
-    
-    document.querySelectorAll('.msg-box').forEach(msg => msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); }));
-    
-    ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
-    
-    shareBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
-        let shareImagePath = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
-        let shareFileName = sessionPersistentTargetIndex !== null ? `${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `scanfreak_logo.png`;
-        if (navigator.share) {
-            try {
-                const response = await fetch(shareImagePath);
-                const blob = await response.blob();
-                const file = new File([blob], shareFileName, { type: 'image/png' });
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [file]
-                });
-            } catch (err) { 
-                navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com'
-                });
-            }
-        }
-    });
-
-    screenshotBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
-        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
-        flashOverlay.classList.add('flash-active');
         
-        try {
-            const imageFile = await captureFullImage();
-            if (navigator.share) {
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "The future is now - level up your reality or become obsolete! 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [imageFile]
-                });
-            }
-        } catch (err) { console.log("Screenshot share failed", err); }
-    });
+        // AUDIO FIX: Resume AudioContext and play start sound
+        if (AFRAME.scenes[0].audioListener) {
+            AFRAME.scenes[0].audioListener.context.resume();
+        }
+        sfxStart.play().catch(e => console.log('Audio error:', e));
+        setTimeout(() => sfxStartup.play().catch(e => console.log(e)), 2000);
 
-    sceneEl.addEventListener("arReady", () => {
-        document.getElementById('loading-container').style.visibility = 'hidden'; 
-        document.getElementById('logo-container').classList.add('animate-sweep');
-        document.getElementById('main-logo').classList.add('animate-logo');
-        setTimeout(() => { startBtn.classList.add('visible'); }, 3000);
-        findCameraVideo();
-    });
-    </script>
-</body>
-</html>
+        startScreen.classList.add
