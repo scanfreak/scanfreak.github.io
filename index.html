@@ -16,15 +16,15 @@
         html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; touch-action: none; background-color: black; }
         a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; z-index: 1; }
 
-        /* FIX 1: Ensure the camera video feed is visible behind the AR scene */
-        video { 
-            position: fixed !important; 
-            top: 0; 
-            left: 0; 
-            z-index: -1 !important; 
-            object-fit: cover; 
-            width: 100vw !important; 
-            height: 100vh !important; 
+        /* FIX 1: Ensure camera video feed is visible behind the AR scene */
+        video {
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw !important;
+            height: 100vh !important;
+            object-fit: cover !important;
+            z-index: -1 !important;
         }
 
         #start-screen {
@@ -350,6 +350,7 @@
     let isFlashOn = false;
     let track = null;
     let cameraVideo = null;
+    
     let mediaRecorder;
     let recordedChunks = [];
     let isRecording = false;
@@ -501,15 +502,14 @@
 
     window.addEventListener('load', () => Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index)));
 
-    // FIX 2: Unlock audio on user click
     startBtn.addEventListener('click', () => {
-        // Unlock Audio Context
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        
-        // Prime all audio elements
-        [sfxStart, sfxStartup, sfxHelp, sfxStore, sfxShare, sfxScreenshot, sfxFlash, sfxInfo].forEach(s => {
-            s.play(); s.pause(); s.currentTime = 0;
+        // FIX 2: Sound Unlocker logic
+        const allAudio = [sfxStart, sfxStartup, sfxHelp, sfxStore, sfxShare, sfxScreenshot, sfxFlash, sfxInfo];
+        allAudio.forEach(sound => {
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+            }).catch(e => console.log("Audio unlock failed:", e));
         });
 
         triggerHaptic(); 
@@ -525,24 +525,16 @@
     });
 
     helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
-    
-    infoBtn.addEventListener('click', () => { 
-        triggerHaptic(); 
-        sfxInfo.currentTime = 0; 
-        sfxInfo.play(); 
-        showMessage(infoMessage); 
-    });
-
+    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(infoMessage); });
     flashBtn.addEventListener('click', toggleFlash);
 
     recordBtn.addEventListener('click', async () => {
         triggerHaptic();
         sfxScreenshot.currentTime = 0; 
         sfxScreenshot.play();
-
         if (!isRecording) {
             try {
-                const stream = sceneEl.canvas.captureStream(30);
+                const stream = sceneEl.canvas.captureStream(30); 
                 recordedChunks = [];
                 mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
                 mediaRecorder.ondataavailable = (event) => { if (event.data.size > 0) recordedChunks.push(event.data); };
@@ -567,7 +559,6 @@
     
     document.querySelectorAll('.msg-box').forEach(msg => msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); }));
     ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
-    
     shareBtn.addEventListener('click', async () => {
         triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
         let shareImagePath = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
@@ -577,15 +568,8 @@
                 const response = await fetch(shareImagePath);
                 const blob = await response.blob();
                 const file = new File([blob], shareFileName, { type: 'image/png' });
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [file]
-                });
-            } catch (err) { 
-                navigator.share({ title: 'SCANFREAK AR', text: "Experience immersive AR 👀", url: 'https://scanfreak.myshopify.com' });
-            }
+                await navigator.share({ title: 'SCANFREAK AR', text: "Experience this immersive AR!", url: 'https://scanfreak.myshopify.com', files: [file] });
+            } catch (err) { navigator.share({ title: 'SCANFREAK AR', text: "Experience this immersive AR!", url: 'https://scanfreak.myshopify.com' }); }
         }
     });
 
@@ -596,14 +580,9 @@
         try {
             const imageFile = await captureFullImage();
             if (navigator.share) {
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Level up your reality! 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [imageFile]
-                });
+                await navigator.share({ title: 'SCANFREAK AR', text: "The future is now!", url: 'https://scanfreak.myshopify.com', files: [imageFile] });
             }
-        } catch (err) { console.log("Screenshot failed", err); }
+        } catch (err) { console.log("Screenshot share failed", err); }
     });
 
     sceneEl.addEventListener("arReady", () => {
