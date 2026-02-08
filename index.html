@@ -13,8 +13,10 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; touch-action: none; background-color: black; }
-        a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; }
+        /* FIX 1: background-color removed to reveal camera feed */
+        html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; -webkit-tap-highlight-color: transparent; touch-action: none; }
+        
+        a-scene { position: fixed !important; top: 0; left: 0; width: 100vw !important; height: 100vh !important; z-index: 1; }
 
         #start-screen {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
@@ -209,6 +211,9 @@
             color: white; text-align: center; padding: 20px;
         }
         #browser-warning.show { display: flex; }
+
+        /* FIX 2: Hidden canvas for recording */
+        #recording-canvas { position: absolute; top: 0; left: 0; visibility: hidden; z-index: -999; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -270,6 +275,8 @@
     <div id="overlay">
         <span class="marquee-text">Point camera at the SCANFREAK design!</span>
     </div>
+
+    <canvas id="recording-canvas"></canvas>
 
     <a-scene id="ar-scene"
         mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; uiScanning: no" 
@@ -339,6 +346,9 @@
     const screenshotBtn = document.getElementById('screenshot-btn');
     const recTimerUi = document.getElementById('rec-timer');
     const recTimeText = document.getElementById('rec-time-text');
+    
+    // Hidden canvas for recording
+    const recordingCanvas = document.getElementById('recording-canvas');
 
     const helpMessage = document.getElementById('help-message');
     const infoMessage = document.getElementById('info-message');
@@ -370,7 +380,6 @@
     let holdTimeout = null;
     let audioCtx = null;
     let audioDest = null;
-    let compositeCanvas = null;
     let compositeCtx = null;
     let animationFrameId = null;
 
@@ -393,16 +402,12 @@
 
     // --- Message Logic with Toggle ---
     const showMessage = (el) => {
-        // If already visible, hide it (Toggle behavior)
         if (el.classList.contains('visible')) {
             el.classList.remove('visible');
             clearTimeout(msgTimeout);
             return;
         }
-        
-        // Hide others first
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
-        
         el.classList.add('visible');
         clearTimeout(msgTimeout);
         msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
@@ -417,19 +422,16 @@
 
     // --- Audio System Setup (For Recording) ---
     const setupAudioContext = () => {
-        if (audioCtx) return; // Already setup
+        if (audioCtx) return; 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         audioCtx = new AudioContext();
         audioDest = audioCtx.createMediaStreamDestination();
 
-        // Connect all SFX to both speakers (destination) and recorder (audioDest)
         Object.values(sfx).forEach(audioEl => {
-            // Need to handle if source already exists or just create once.
-            // Safe approach: create source only once.
             if (!audioEl._sourceNode) {
                 const source = audioCtx.createMediaElementSource(audioEl);
-                source.connect(audioCtx.destination);
-                source.connect(audioDest);
+                source.connect(audioCtx.destination); // Output to speakers
+                source.connect(audioDest); // Output to recorder
                 audioEl._sourceNode = source;
             }
         });
@@ -513,11 +515,10 @@
         if (isRecording) return;
         if (!cameraVideo) findCameraVideo();
 
-        // 1. Setup Canvas Composition (Video + AR)
-        compositeCanvas = document.createElement('canvas');
-        compositeCanvas.width = sceneEl.canvas.width;
-        compositeCanvas.height = sceneEl.canvas.height;
-        compositeCtx = compositeCanvas.getContext('2d');
+        // Setup Canvas in DOM (required for iOS captureStream)
+        recordingCanvas.width = sceneEl.canvas.width;
+        recordingCanvas.height = sceneEl.canvas.height;
+        compositeCtx = recordingCanvas.getContext('2d');
 
         const drawLoop = () => {
             if (!isRecording) return;
@@ -525,14 +526,14 @@
             // Draw Camera
             if (cameraVideo && cameraVideo.readyState >= 2) {
                 const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
-                const canvasAspect = compositeCanvas.width / compositeCanvas.height;
+                const canvasAspect = recordingCanvas.width / recordingCanvas.height;
                 let dw, dh, ox, oy;
                 if (videoAspect > canvasAspect) {
-                    dh = compositeCanvas.height; dw = dh * videoAspect;
-                    ox = -(dw - compositeCanvas.width) / 2; oy = 0;
+                    dh = recordingCanvas.height; dw = dh * videoAspect;
+                    ox = -(dw - recordingCanvas.width) / 2; oy = 0;
                 } else {
-                    dw = compositeCanvas.width; dh = dw / videoAspect;
-                    ox = 0; oy = -(dh - compositeCanvas.height) / 2;
+                    dw = recordingCanvas.width; dh = dw / videoAspect;
+                    ox = 0; oy = -(dh - recordingCanvas.height) / 2;
                 }
                 compositeCtx.drawImage(cameraVideo, ox, oy, dw, dh);
             }
@@ -545,39 +546,36 @@
         isRecording = true;
         drawLoop();
 
-        // 2. Prepare Stream (Canvas + Audio)
-        const canvasStream = compositeCanvas.captureStream(30); // 30 FPS
+        // Capture Stream
+        const canvasStream = recordingCanvas.captureStream(30); 
         const audioStream = audioDest.stream;
-        
-        // Combine tracks: Video from canvas, Audio from AudioContext
-        const combinedTracks = [...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()];
-        const combinedStream = new MediaStream(combinedTracks);
+        const combinedStream = new MediaStream([...canvasStream.getVideoTracks(), ...audioStream.getAudioTracks()]);
 
-        // 3. Select MimeType
-        const mimeTypes = [
-            'video/mp4;codecs=h264', // iPhone/Safari preferred
-            'video/webm;codecs=vp9', // Android High
-            'video/webm;codecs=vp8', // Android Std
-            'video/webm'             // Fallback
-        ];
-        const selectedType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type)) || '';
+        // MimeType Selection Priority
+        let selectedType = '';
+        if (MediaRecorder.isTypeSupported('video/mp4;codecs=h264')) {
+            selectedType = 'video/mp4;codecs=h264';
+        } else if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) {
+            selectedType = 'video/webm;codecs=vp9';
+        } else if (MediaRecorder.isTypeSupported('video/webm')) {
+            selectedType = 'video/webm';
+        }
 
-        // 4. Start MediaRecorder
         recordedChunks = [];
         try {
-            mediaRecorder = new MediaRecorder(combinedStream, { mimeType: selectedType });
+            mediaRecorder = selectedType ? new MediaRecorder(combinedStream, { mimeType: selectedType }) : new MediaRecorder(combinedStream);
         } catch (e) {
-            // Fallback if options fail
-            mediaRecorder = new MediaRecorder(combinedStream);
+            console.error("MediaRecorder Init Failed:", e);
+            mediaRecorder = new MediaRecorder(combinedStream); // Fallback to default
         }
 
         mediaRecorder.ondataavailable = (event) => {
-            if (event.data.size > 0) recordedChunks.push(event.data);
+            if (event.data && event.data.size > 0) recordedChunks.push(event.data);
         };
 
+        // Start Recording
         mediaRecorder.start();
         
-        // 5. UI Updates
         screenshotBtn.classList.add('recording');
         recTimerUi.classList.add('visible');
         recStartTime = Date.now();
@@ -592,21 +590,19 @@
     const stopRecording = async () => {
         if (!isRecording || !mediaRecorder) return;
         
-        isRecording = false;
+        // Stop UI
         clearInterval(recInterval);
         cancelAnimationFrame(animationFrameId);
         screenshotBtn.classList.remove('recording');
         recTimerUi.classList.remove('visible');
         recTimeText.innerText = "00:00";
+        isRecording = false; // Flag must be false before mediaRecorder stops to prevent loop issues
 
         mediaRecorder.onstop = async () => {
             const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType });
-            
-            // Determine extension based on mimeType
             const ext = mediaRecorder.mimeType.includes('mp4') ? 'mp4' : 'webm';
             const file = new File([blob], `scanfreak_ar_video.${ext}`, { type: mediaRecorder.mimeType });
 
-            // Share
             if (navigator.share) {
                 try {
                     await navigator.share({
@@ -616,7 +612,6 @@
                     });
                 } catch (err) { console.log('Share canceled or failed', err); }
             } else {
-                // Fallback: download
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
                 a.download = `scanfreak_capture.${ext}`;
@@ -624,32 +619,26 @@
             }
         };
 
-        mediaRecorder.stop();
-        
-        // Cleanup AudioContext is not needed (keep it alive), 
-        // but we can stop the tracks of the stream to save battery
+        if(mediaRecorder.state !== 'inactive') mediaRecorder.stop();
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
     };
 
     // --- Interaction Handlers for Screenshot/Record ---
-    // Start holding
-    screenshotBtn.addEventListener('touchstart', (e) => {
-        e.preventDefault(); // Prevent ghost clicks
+    const handleBtnStart = (e) => {
+        e.preventDefault(); 
         triggerHaptic();
         
-        // Reset timer
         holdTimeout = setTimeout(() => {
             // 1.5 Seconds reached - Start Recording
-            sfx.flash.currentTime = 0; sfx.flash.play(); // Play flash sound as indicator
+            sfx.flash.currentTime = 0; sfx.flash.play();
             triggerHaptic();
-            if (navigator.vibrate) navigator.vibrate([50, 50, 50]); // Distinct buzz
+            if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
             startRecording();
-            holdTimeout = null; // Mark as handled
+            holdTimeout = null; // Mark as handled (recording started)
         }, 1500);
-    });
+    };
 
-    // Release button
-    screenshotBtn.addEventListener('touchend', async (e) => {
+    const handleBtnEnd = async (e) => {
         e.preventDefault();
         
         if (holdTimeout) {
@@ -657,7 +646,6 @@
             clearTimeout(holdTimeout);
             holdTimeout = null;
             
-            // Perform Screenshot Logic
             sfx.screenshot.currentTime = 0; sfx.screenshot.play();
             flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
             flashOverlay.classList.add('flash-active');
@@ -671,6 +659,9 @@
                         url: 'https://scanfreak.myshopify.com',
                         files: [imageFile]
                     });
+                } else {
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(imageFile); a.download = 'scanfreak.jpg'; a.click();
                 }
             } catch (err) { console.log("Screenshot share failed", err); }
 
@@ -678,35 +669,12 @@
             // Released AFTER 1.5s -> Stop Recording
             stopRecording();
         }
-    });
+    };
 
-    // Mouse support for desktop testing
-    screenshotBtn.addEventListener('mousedown', (e) => {
-        holdTimeout = setTimeout(() => {
-            sfx.flash.currentTime = 0; sfx.flash.play();
-            startRecording();
-            holdTimeout = null;
-        }, 1500);
-    });
-    
-    screenshotBtn.addEventListener('mouseup', async () => {
-        if (holdTimeout) {
-            clearTimeout(holdTimeout); holdTimeout = null;
-            sfx.screenshot.currentTime = 0; sfx.screenshot.play();
-            flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
-            const imageFile = await captureFullImage();
-            // Desktop share logic mostly just downloads, but we'll try API
-             if (navigator.canShare && navigator.canShare({ files: [imageFile] })) {
-                navigator.share({ files: [imageFile], title: 'SCANFREAK', text: 'Check this out' });
-             } else {
-                 const a = document.createElement('a');
-                 a.href = URL.createObjectURL(imageFile); a.download = 'scanfreak.jpg'; a.click();
-             }
-        } else {
-            stopRecording();
-        }
-    });
-
+    screenshotBtn.addEventListener('touchstart', handleBtnStart);
+    screenshotBtn.addEventListener('touchend', handleBtnEnd);
+    screenshotBtn.addEventListener('mousedown', handleBtnStart); // For testing
+    screenshotBtn.addEventListener('mouseup', handleBtnEnd);     // For testing
 
     // --- MindAR Logic ---
     const setupTarget = (index) => {
@@ -770,7 +738,7 @@
 
     startBtn.addEventListener('click', () => {
         triggerHaptic(); 
-        setupAudioContext(); // Initialize Audio Context on user gesture
+        setupAudioContext(); // Initialize Audio
         if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
         
         sfx.start.play();
