@@ -152,6 +152,18 @@
         #flash-btn { top: 195px; }
         #record-btn { top: 240px; }
 
+        /* Recording State Style */
+        .recording {
+            background-color: rgba(255, 0, 0, 0.6) !important;
+            border-color: red !important;
+            animation: pulseRec 1s infinite;
+        }
+        @keyframes pulseRec {
+            0% { transform: scale(1); box-shadow: 0 0 5px red; }
+            50% { transform: scale(1.1); box-shadow: 0 0 15px red; }
+            100% { transform: scale(1); box-shadow: 0 0 5px red; }
+        }
+
         #screenshot-btn {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
             width: 60px; height: 60px; border-radius: 15px; z-index: 20;
@@ -331,6 +343,11 @@
     let isFlashOn = false;
     let track = null;
     let cameraVideo = null;
+    
+    // Recording variables
+    let mediaRecorder;
+    let recordedChunks = [];
+    let isRecording = false;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -450,6 +467,7 @@
             overlay.classList.remove('visible'); 
             scannerUi.classList.remove('visible');
             document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
+            // Added recordBtn to the list of elements that hide
             [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, recordBtn].forEach(btn => btn.classList.remove('visible'));
             screenshotBtn.classList.add('visible'); 
             zoomDisplay.classList.add('visible');
@@ -471,6 +489,7 @@
             if (isStarted) {
                 overlay.classList.add('visible'); 
                 scannerUi.classList.add('visible');
+                // Added recordBtn to the list of elements that show
                 [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, recordBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
@@ -485,6 +504,7 @@
         startScreen.classList.add('hidden');
         overlay.classList.add('visible'); 
         scannerUi.classList.add('visible');
+        // Added recordBtn to the list of elements that show on start
         [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn, recordBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
@@ -502,19 +522,59 @@
 
     flashBtn.addEventListener('click', toggleFlash);
 
+    // Screen Recording Logic
     recordBtn.addEventListener('click', async () => {
         triggerHaptic();
-        sfxScreenshot.currentTime = 0;
+        sfxScreenshot.currentTime = 0; 
         sfxScreenshot.play();
-        // Try to trigger the browser's native screen recording/sharing prompt
-        try {
-            if (navigator.mediaDevices && navigator.mediaDevices.getDisplayMedia) {
-                await navigator.mediaDevices.getDisplayMedia({ video: true });
-            } else {
-                console.log("Native screen recording API not supported in this browser.");
+
+        if (!isRecording) {
+            // Start Recording
+            try {
+                const stream = sceneEl.canvas.captureStream(30); // Capture the A-Frame canvas at 30fps
+                
+                // If we could mix in the cameraVideo stream audio here we would, but keeping it simple for stability
+                // Note: Depending on browser/MindAR version, this may capture black background + 3D models only 
+                
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=vp9' });
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.style.display = 'none';
+                    a.href = url;
+                    a.download = 'scanfreak_recording.webm';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    }, 100);
+                };
+
+                mediaRecorder.start();
+                isRecording = true;
+                recordBtn.classList.add('recording');
+            } catch (e) {
+                console.error("Recording failed", e);
+                // Fallback for browsers that don't support captureStream seamlessly
+                alert("Screen recording not supported in this browser. Please use your phone's native screen recorder.");
             }
-        } catch (err) {
-            console.log("Screen recording cancelled or not supported");
+        } else {
+            // Stop Recording
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+            isRecording = false;
+            recordBtn.classList.remove('recording');
         }
     });
     
