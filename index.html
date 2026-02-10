@@ -358,6 +358,7 @@
     let timerInterval;
     let audioContext;
     let audioDest;
+    let micStream;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -417,7 +418,7 @@
         
         // 1. Capture Microphone
         try {
-            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const micSource = audioContext.createMediaStreamSource(micStream);
             micSource.connect(audioDest);
         } catch (e) { console.log("Mic access denied or unavailable", e); }
@@ -425,9 +426,10 @@
         // 2. Capture Current Active AR Video Audio
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const activeVideo = videoPool[lastFoundTargetIndex];
+            // Connect video to AudioContext to record it
             const videoSource = audioContext.createMediaElementSource(activeVideo);
             videoSource.connect(audioDest);
-            videoSource.connect(audioContext.destination); // Keep sound audible to user
+            videoSource.connect(audioContext.destination); // Required to hear it while recording
         }
 
         const captureLoop = () => {
@@ -451,7 +453,6 @@
 
         const videoStream = streamCanvas.captureStream(30);
         
-        // Combine Video and the mixed Audio
         const combinedStream = new MediaStream([
             ...videoStream.getVideoTracks(),
             ...audioDest.stream.getAudioTracks()
@@ -480,11 +481,28 @@
 
     const stopRecording = () => {
         isRecording = false;
-        mediaRecorder.stop();
+        if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
         recordBtn.classList.remove('recording');
         recTimer.style.display = 'none';
         clearInterval(timerInterval);
-        if (audioContext) audioContext.close();
+        
+        // Cleanup mic
+        if (micStream) {
+            micStream.getTracks().forEach(track => track.stop());
+            micStream = null;
+        }
+
+        // Cleanup AudioContext and RESET video playback
+        if (audioContext) {
+            audioContext.close().then(() => {
+                audioContext = null;
+                // Important: Ensure video resumes and is audible after WebAudio release
+                if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
+                    const activeVideo = videoPool[lastFoundTargetIndex];
+                    activeVideo.play().catch(e => console.log("Resume play failed", e));
+                }
+            });
+        }
     };
 
     const handleStopRecording = async () => {
@@ -495,7 +513,7 @@
             try {
                 await navigator.share({
                     title: 'SCANFREAK AR',
-                    text: 'Check out this AR capture with sound! 🔊👀',
+                    text: 'Check out this AR capture! 🔊👀',
                     files: [file]
                 });
             } catch (err) {
@@ -653,14 +671,14 @@
                 const file = new File([blob], shareFileName, { type: 'image/png' });
                 await navigator.share({
                     title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
+                    text: "Experience this immersive AR for yourself 👀",
                     url: 'https://scanfreak.myshopify.com',
                     files: [file]
                 });
             } catch (err) { 
                 navigator.share({
                     title: 'SCANFREAK AR',
-                    text: "Got my hands on some wild merch. You've got to experience this immersive AR for yourself 👀",
+                    text: "Experience this immersive AR for yourself 👀",
                     url: 'https://scanfreak.myshopify.com'
                 });
             }
@@ -676,7 +694,7 @@
             if (navigator.share) {
                 await navigator.share({
                     title: 'SCANFREAK AR',
-                    text: "The future is now - level up your reality or become obsolete! 👀",
+                    text: "The future is now! 👀",
                     url: 'https://scanfreak.myshopify.com',
                     files: [imageFile]
                 });
