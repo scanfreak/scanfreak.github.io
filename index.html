@@ -356,6 +356,8 @@
     let isRecording = false;
     let startTime;
     let timerInterval;
+    let audioContext;
+    let audioDest;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -387,7 +389,6 @@
         } catch (err) { showMessage(flashErrorMsg); }
     };
 
-    // Screen Recording Logic
     const toggleRecording = async () => {
         triggerHaptic();
         sfxScreenshot.currentTime = 0;
@@ -410,7 +411,25 @@
         streamCanvas.width = arCanvas.width;
         streamCanvas.height = arCanvas.height;
 
-        // Create capture loop for recording (skipping UI)
+        // --- Audio Handling ---
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        audioDest = audioContext.createMediaStreamDestination();
+        
+        // 1. Capture Microphone
+        try {
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const micSource = audioContext.createMediaStreamSource(micStream);
+            micSource.connect(audioDest);
+        } catch (e) { console.log("Mic access denied or unavailable", e); }
+
+        // 2. Capture Current Active AR Video Audio
+        if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
+            const activeVideo = videoPool[lastFoundTargetIndex];
+            const videoSource = audioContext.createMediaElementSource(activeVideo);
+            videoSource.connect(audioDest);
+            videoSource.connect(audioContext.destination); // Keep sound audible to user
+        }
+
         const captureLoop = () => {
             if (!isRecording) return;
             if (cameraVideo && cameraVideo.readyState >= 2) {
@@ -430,8 +449,15 @@
             requestAnimationFrame(captureLoop);
         };
 
-        const stream = streamCanvas.captureStream(30);
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+        const videoStream = streamCanvas.captureStream(30);
+        
+        // Combine Video and the mixed Audio
+        const combinedStream = new MediaStream([
+            ...videoStream.getVideoTracks(),
+            ...audioDest.stream.getAudioTracks()
+        ]);
+
+        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
 
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = handleStopRecording;
@@ -458,6 +484,7 @@
         recordBtn.classList.remove('recording');
         recTimer.style.display = 'none';
         clearInterval(timerInterval);
+        if (audioContext) audioContext.close();
     };
 
     const handleStopRecording = async () => {
@@ -468,7 +495,7 @@
             try {
                 await navigator.share({
                     title: 'SCANFREAK AR',
-                    text: 'Check out this AR capture! 👀',
+                    text: 'Check out this AR capture with sound! 🔊👀',
                     files: [file]
                 });
             } catch (err) {
