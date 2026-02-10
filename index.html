@@ -358,6 +358,7 @@
     let timerInterval;
     let audioContext;
     let audioDest;
+    let pendingVideoReset = false; // Flag to track if we need to reset video on resume
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -423,9 +424,11 @@
 
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const activeVideo = videoPool[lastFoundTargetIndex];
-            const videoSource = audioContext.createMediaElementSource(activeVideo);
-            videoSource.connect(audioDest);
-            videoSource.connect(audioContext.destination);
+            try {
+                const videoSource = audioContext.createMediaElementSource(activeVideo);
+                videoSource.connect(audioDest);
+                videoSource.connect(audioContext.destination);
+            } catch(e) { console.log("Audio node already exists", e); }
         }
 
         const captureLoop = () => {
@@ -485,19 +488,15 @@
         const blob = new Blob(recordedChunks, { type: 'video/mp4' });
         const file = new File([blob], "scanfreak_ar.mp4", { type: 'video/mp4' });
         
-        // RESET FIX: Disconnect and re-trigger video playback
-        if (audioContext) {
-            audioContext.close().then(() => {
-                if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
-                    const activeVideo = videoPool[lastFoundTargetIndex];
-                    // Setting src to itself forces the browser to re-route audio to speakers
-                    const currentSrc = activeVideo.src;
-                    activeVideo.src = currentSrc;
-                    activeVideo.load();
-                    activeVideo.play().catch(e => console.log("Resume play failed", e));
-                }
-            });
+        // --- 1. CLEANUP AUDIO CONTEXT IMMEDIATELY ---
+        if (audioContext && audioContext.state !== 'closed') {
+            await audioContext.close();
         }
+        audioContext = null;
+
+        // --- 2. FLAG FOR RESET ON RESUME ---
+        // We do not reset video yet, because the share sheet will background the app
+        pendingVideoReset = true; 
 
         if (navigator.share) {
             try {
@@ -514,6 +513,33 @@
         }
         showMessage(recordMessage);
     };
+
+    // --- 3. THE "RETURN TO APP" LISTENER ---
+    // This fires when the user closes the share sheet and looks at the scanner again
+    document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && pendingVideoReset) {
+            pendingVideoReset = false; // Reset flag so it doesn't run again
+
+            if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
+                const activeVideo = videoPool[lastFoundTargetIndex];
+                const savedSrc = activeVideo.src;
+                
+                // NUCLEAR RESET: This forces the browser to treat it as a new video
+                // and re-bind the audio output to the system speakers.
+                activeVideo.pause();
+                activeVideo.src = "";
+                activeVideo.load();
+                
+                setTimeout(async () => {
+                   activeVideo.src = savedSrc;
+                   activeVideo.load();
+                   try {
+                       await activeVideo.play();
+                   } catch (e) { console.log("Final resume attempt failed", e); }
+                }, 100);
+            }
+        }
+    });
 
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
