@@ -356,9 +356,11 @@
     let isRecording = false;
     let startTime;
     let timerInterval;
+    
+    // PERSISTENT AUDIO GRAPH
     let audioContext;
     let audioDest;
-    let combinedStream;
+    const videoSourceNodes = {}; // Store created nodes here
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -394,38 +396,47 @@
         triggerHaptic();
         sfxScreenshot.currentTime = 0;
         sfxScreenshot.play();
-
-        if (!isRecording) {
-            startRecording();
-        } else {
-            stopRecording();
-        }
+        if (!isRecording) startRecording(); else stopRecording();
     };
 
     const startRecording = async () => {
         recordedChunks = [];
         if (!cameraVideo) findCameraVideo();
         
+        // Initialize Audio Context on first record if not already done
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioDest = audioContext.createMediaStreamDestination();
+        }
+        
+        if (audioContext.state === 'suspended') await audioContext.resume();
+
         const arCanvas = sceneEl.canvas;
         const streamCanvas = document.createElement('canvas');
         const ctx = streamCanvas.getContext('2d');
         streamCanvas.width = arCanvas.width;
         streamCanvas.height = arCanvas.height;
 
-        audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        audioDest = audioContext.createMediaStreamDestination();
-        
+        // 1. Capture Microphone (must be requested each time to avoid hardware locks)
+        let micStream;
         try {
-            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const micSource = audioContext.createMediaStreamSource(micStream);
             micSource.connect(audioDest);
         } catch (e) { console.log("Mic access denied", e); }
 
+        // 2. Connect Active Video Source
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const activeVideo = videoPool[lastFoundTargetIndex];
-            const videoSource = audioContext.createMediaElementSource(activeVideo);
-            videoSource.connect(audioDest);
-            videoSource.connect(audioContext.destination);
+            
+            // Re-use or Create the Node
+            if (!videoSourceNodes[lastFoundTargetIndex]) {
+                videoSourceNodes[lastFoundTargetIndex] = audioContext.createMediaElementSource(activeVideo);
+            }
+            
+            // Route to recorder AND speakers
+            videoSourceNodes[lastFoundTargetIndex].connect(audioDest);
+            videoSourceNodes[lastFoundTargetIndex].connect(audioContext.destination);
         }
 
         const captureLoop = () => {
@@ -448,14 +459,18 @@
         };
 
         const videoStream = streamCanvas.captureStream(30);
-        combinedStream = new MediaStream([
+        const combinedStream = new MediaStream([
             ...videoStream.getVideoTracks(),
             ...audioDest.stream.getAudioTracks()
         ]);
 
         mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = handleStopRecording;
+        mediaRecorder.onstop = () => {
+            // Clean up Mic stream only
+            if (micStream) micStream.getTracks().forEach(t => t.stop());
+            handleStopRecording();
+        };
 
         isRecording = true;
         mediaRecorder.start();
@@ -479,11 +494,6 @@
         recordBtn.classList.remove('recording');
         recTimer.style.display = 'none';
         clearInterval(timerInterval);
-        
-        // Kill the streams immediately to release hardware
-        if (combinedStream) {
-            combinedStream.getTracks().forEach(track => track.stop());
-        }
     };
 
     const handleStopRecording = async () => {
@@ -504,32 +514,20 @@
             }
         }
         
-        // Reset the active video if it's stuck
         kickstartActiveVideo();
         showMessage(recordMessage);
     };
 
-    // --- CRITICAL FIX: RESET LOGIC ---
     const kickstartActiveVideo = () => {
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const v = videoPool[lastFoundTargetIndex];
-            // If the audio context was used, it might be suspended
-            if (audioContext && audioContext.state === 'suspended') {
-                audioContext.resume();
-            }
-            // Force play and a tiny seek to refresh the buffer
-            v.play().catch(() => {
-                v.muted = true; // Fallback if browser blocks sound resume
-                v.play();
-            });
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+            v.play().catch(() => { v.muted = true; v.play(); });
         }
     };
 
-    // Listen for the user returning to the tab from the Share Sheet
     document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            kickstartActiveVideo();
-        }
+        if (document.visibilityState === 'visible') kickstartActiveVideo();
     });
 
     window.addEventListener('touchstart', (e) => {
