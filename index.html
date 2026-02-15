@@ -590,18 +590,54 @@
     
     recordBtn.addEventListener('click', toggleRecording);
 
-    // FIXED: Share Button listener restored with Haptics and Sound
-    shareBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        e.stopPropagation(); // Prevents the AR scene from swallowing the click
+    // FIXED: Smart Share Logic with Dynamic Image Preview and Fallback
+    shareBtn.addEventListener('click', async (e) => {
+        e.preventDefault(); 
+        e.stopPropagation();
         triggerHaptic();
         sfxShare.currentTime = 0;
         sfxShare.play();
-        if (navigator.share) {
-            navigator.share({ title: 'SCANFREAK AR', url: window.location.href });
-        } else {
-            // Fallback for desktop or non-sharing browsers
-            navigator.clipboard.writeText(window.location.href).then(() => {
+
+        const shareText = "Got my hands on some wild merch. It's freakin on another level - it literally comes alive! You've got to experience this immersive AR for yourself 👀";
+        const shareUrl = "http://scanfreak.myshopify.com/";
+        const shareTitle = "SCANFREAK AR";
+
+        let filePath = "assets/scanfreakblanklogo.png"; // Default fallback
+        let fileName = "scanfreak.png";
+
+        // Determine which image to share
+        if (sessionPersistentTargetIndex !== null) {
+            const data = COLLECTION_DATA[sessionPersistentTargetIndex];
+            // Uses the asset corresponding to the last scanned item
+            filePath = `assets/share/${data.name}_share.png`;
+            fileName = `${data.name}_share.png`;
+        }
+
+        try {
+            // Fetch the image as a blob
+            const response = await fetch(filePath);
+            const blob = await response.blob();
+            const fileToShare = new File([blob], fileName, { type: blob.type });
+
+            // Attempt to share with file
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
+                await navigator.share({
+                    title: shareTitle,
+                    text: shareText + " " + shareUrl,
+                    files: [fileToShare]
+                });
+            } else {
+                // Fallback: Share text/URL only if file sharing is not supported
+                if (navigator.share) {
+                    await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
+                } else {
+                    throw new Error("Sharing not supported");
+                }
+            }
+        } catch (err) {
+            console.log("Share failed or cancelled", err);
+            // Absolute Fallback: Clipboard
+            navigator.clipboard.writeText(shareText + " " + shareUrl).then(() => {
                 alert("Link copied to clipboard!");
             });
         }
