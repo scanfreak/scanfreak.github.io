@@ -358,7 +358,8 @@
     let timerInterval;
     let audioContext;
     let audioDest;
-    let pendingVideoReset = false; // Flag to track if we need to reset video on resume
+    let micStream;
+    let videoSource;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -412,23 +413,23 @@
         streamCanvas.width = arCanvas.width;
         streamCanvas.height = arCanvas.height;
 
-        // Audio Handling
+        // --- Audio Handling ---
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         audioDest = audioContext.createMediaStreamDestination();
         
+        // 1. Capture Microphone
         try {
-            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const micSource = audioContext.createMediaStreamSource(micStream);
             micSource.connect(audioDest);
-        } catch (e) { console.log("Mic access denied", e); }
+        } catch (e) { console.log("Mic access denied or unavailable", e); }
 
+        // 2. Capture Current Active AR Video Audio
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const activeVideo = videoPool[lastFoundTargetIndex];
-            try {
-                const videoSource = audioContext.createMediaElementSource(activeVideo);
-                videoSource.connect(audioDest);
-                videoSource.connect(audioContext.destination);
-            } catch(e) { console.log("Audio node already exists", e); }
+            videoSource = audioContext.createMediaElementSource(activeVideo);
+            videoSource.connect(audioDest);
+            videoSource.connect(audioContext.destination); // Keep sound audible to user
         }
 
         const captureLoop = () => {
@@ -451,12 +452,15 @@
         };
 
         const videoStream = streamCanvas.captureStream(30);
+        
+        // Combine Video and the mixed Audio
         const combinedStream = new MediaStream([
             ...videoStream.getVideoTracks(),
             ...audioDest.stream.getAudioTracks()
         ]);
 
         mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
+
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = handleStopRecording;
 
@@ -478,7 +482,7 @@
 
     const stopRecording = () => {
         isRecording = false;
-        mediaRecorder.stop();
+        if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
         recordBtn.classList.remove('recording');
         recTimer.style.display = 'none';
         clearInterval(timerInterval);
@@ -487,17 +491,12 @@
     const handleStopRecording = async () => {
         const blob = new Blob(recordedChunks, { type: 'video/mp4' });
         const file = new File([blob], "scanfreak_ar.mp4", { type: 'video/mp4' });
+
+        // Clean up audio tracks/nodes but DON'T close the context immediately 
+        // to prevent freezing the source video element
+        if (micStream) micStream.getTracks().forEach(track => track.stop());
+        if (videoSource) videoSource.disconnect();
         
-        // --- 1. CLEANUP AUDIO CONTEXT IMMEDIATELY ---
-        if (audioContext && audioContext.state !== 'closed') {
-            await audioContext.close();
-        }
-        audioContext = null;
-
-        // --- 2. FLAG FOR RESET ON RESUME ---
-        // We do not reset video yet, because the share sheet will background the app
-        pendingVideoReset = true; 
-
         if (navigator.share) {
             try {
                 await navigator.share({
@@ -511,35 +510,19 @@
                 a.href = url; a.download = 'scanfreak_ar.mp4'; a.click();
             }
         }
+
+        // Post-share Reset: If target is still found, kickstart the video
+        if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
+            const v = videoPool[lastFoundTargetIndex];
+            v.play().catch(() => {
+                // If play fails, force a slight seek to "nudge" the engine
+                v.currentTime = v.currentTime + 0.1;
+                v.play();
+            });
+        }
+        
         showMessage(recordMessage);
     };
-
-    // --- 3. THE "RETURN TO APP" LISTENER ---
-    // This fires when the user closes the share sheet and looks at the scanner again
-    document.addEventListener("visibilitychange", async () => {
-        if (document.visibilityState === "visible" && pendingVideoReset) {
-            pendingVideoReset = false; // Reset flag so it doesn't run again
-
-            if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
-                const activeVideo = videoPool[lastFoundTargetIndex];
-                const savedSrc = activeVideo.src;
-                
-                // NUCLEAR RESET: This forces the browser to treat it as a new video
-                // and re-bind the audio output to the system speakers.
-                activeVideo.pause();
-                activeVideo.src = "";
-                activeVideo.load();
-                
-                setTimeout(async () => {
-                   activeVideo.src = savedSrc;
-                   activeVideo.load();
-                   try {
-                       await activeVideo.play();
-                   } catch (e) { console.log("Final resume attempt failed", e); }
-                }, 100);
-            }
-        }
-    });
 
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
@@ -571,10 +554,12 @@
                 const ctx = outputCanvas.getContext('2d');
                 outputCanvas.width = arCanvas.width;
                 outputCanvas.height = arCanvas.height;
+
                 if (cameraVideo && cameraVideo.readyState >= 2) {
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
+                    
                     if (videoAspect > canvasAspect) {
                         drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
                         offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
@@ -584,6 +569,7 @@
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
                 }
+                
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
                 outputCanvas.toBlob(blob => {
                     resolve(new File([blob], "scanfreak_ar.jpg", { type: "image/jpeg" }));
