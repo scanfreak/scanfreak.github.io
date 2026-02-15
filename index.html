@@ -24,9 +24,10 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.9);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            z-index: 60; transition: opacity 0.5s, visibility 0.5s;
+            z-index: 30; transition: opacity 0.5s, visibility 0.5s;
             user-select: none;
         }
+
         #start-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
 
         .logo-wrapper {
@@ -35,85 +36,181 @@
             width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
             margin-bottom: 20px;
         }
-        .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; }
+
+        .logo-image { max-width: 90%; max-height: 90%; object-fit: contain; display: block; opacity: 1; }
         .animate-logo { animation: fadeOut 3s ease-in-out forwards; }
+        
+        .logo-wrapper::after {
+            content: ""; position: absolute; top: -150%; left: -150%; width: 100%; height: 400%;
+            background: linear-gradient(135deg, transparent, rgba(255,255,255,0.7), transparent);
+            transform: rotate(25deg);
+        }
+
+        .animate-sweep::after { animation: sweep 1.2s ease-in-out forwards; }
+        @keyframes sweep { 100% { top: 100%; left: 100%; } }
         @keyframes fadeOut { 0%, 70% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.95); } }
 
         #loading-container {
             width: 200px; height: 4px; background: rgba(255, 255, 255, 0.1);
-            margin-top: 20px; border-radius: 10px; position: relative; overflow: hidden;
+            margin-top: 20px; border-radius: 10px; position: relative;
+            overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.2);
         }
+
         #loading-bar {
             width: 40%; height: 100%; background: #ffffff;
-            position: absolute; left: -40%; animation: loadingMove 1.5s infinite;
+            position: absolute; left: -40%; border-radius: 10px;
+            animation: loadingMove 1.5s infinite ease-in-out; box-shadow: 0 0 10px #fff;
         }
+
         @keyframes loadingMove { 0% { left: -40%; } 50% { left: 100%; } 100% { left: -40%; } }
 
         #start-btn {
-            font-family: 'Press Start 2P', cursive; padding: 15px; font-size: 15px;
+            font-family: 'Press Start 2P', cursive; padding: 15px 15px; font-size: 15px; color: black;
             background: white; border: 4px solid #555; border-radius: 15px; cursor: pointer;
-            opacity: 0; pointer-events: none; transition: opacity 0.8s;
-            position: absolute; margin-top: 30px;
+            text-transform: uppercase; box-shadow: 4px 4px 0px #888; opacity: 0; pointer-events: none;
+            transition: opacity 0.8s ease-in; 
+            position: absolute; 
+            margin-top: 30px; 
         }
-        #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
-        @keyframes pulseBtn { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
-        /* UI BUTTONS - BUMPED Z-INDEX */
+        #start-btn.visible { opacity: 1; pointer-events: auto; animation: pulseBtn 1.5s infinite; }
+        
+        @keyframes pulseBtn { 
+            0% { transform: translateY(-50%) scale(1); } 
+            50% { transform: translateY(-50%) scale(1.08); box-shadow: 0 0 15px rgba(255,255,255,0.4); } 
+            100% { transform: translateY(-50%) scale(1); } 
+        }
+        
+        #start-btn:active { transform: translateY(-50%) translate(4px, 4px); box-shadow: none; }
+
+        #scanner-ui {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60vw; height: 60vw;
+            max-width: 320px; max-height: 320px;
+            border: 2px solid rgba(255, 255, 255, 0);
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        #scanner-ui.visible { opacity: 1; }
+
+        .corner {
+            position: absolute; width: 30px; height: 30px;
+            border: 8px solid white;
+        }
+        .top-left { top: -4px; left: -4px; border-right: none; border-bottom: none; }
+        .top-right { top: -4px; right: -4px; border-left: none; border-bottom: none; }
+        .bottom-left { bottom: -4px; left: -4px; border-right: none; border-top: none; }
+        .bottom-right { bottom: -4px; right: -4px; border-left: none; border-top: none; }
+
+        .scan-line {
+            position: absolute; width: 100%; height: 8px;
+            background: white; top: 0; left: 0;
+            box-shadow: 0 0 20px white;
+            animation: scanMove 2.0s ease-in-out infinite;
+        }
+
+        @keyframes scanMove {
+            0%, 100% { top: 5%; opacity: 0.3; }
+            50% { top: 95%; opacity: 1; }
+        }
+
+        #overlay { 
+            position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
+            width: 80%; max-width: 400px; padding: 12px 0;
+            color: white; font-size: 18px; font-family: Arial, sans-serif; 
+            text-shadow: 2px 2px 4px black; background: rgba(0, 0, 0, 0.6); 
+            border-radius: 12px; z-index: 10; transition: opacity 0.5s; 
+            pointer-events: none; opacity: 0; 
+            overflow: hidden; white-space: nowrap;
+        }
+        #overlay.visible { opacity: 1; }
+
+        .marquee-text {
+            display: inline-block;
+            padding-left: 100%;
+            animation: scroll-left 6.4s linear infinite;
+        }
+
+        @keyframes scroll-left {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+
         .btn-ui {
             position: absolute; width: 36px; height: 36px; right: 15px;
             background: rgba(0, 0, 0, 0.4); color: white; border: 2px solid white;
             border-radius: 10px; display: flex; justify-content: center; align-items: center;
-            cursor: pointer; z-index: 50; transition: opacity 0.5s;
-            opacity: 0; pointer-events: none;
+            cursor: pointer; z-index: 20; transition: opacity 0.5s;
+            opacity: 0; pointer-events: none; text-decoration: none; overflow: hidden;
         }
-        .btn-ui.visible { opacity: 1; pointer-events: auto !important; }
-        .ui-icon { width: 70%; height: 70%; pointer-events: none; }
-
+        .btn-ui.visible { opacity: 1; pointer-events: auto; }
+        
         #help-btn { top: 15px; }
         #cta-btn { top: 60px; } 
         #share-btn { top: 105px; } 
         #info-btn { top: 150px; }
         #flash-btn { top: 195px; }
 
-        #screenshot-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-110%); width: 60px; height: 60px; border-radius: 15px; display: none; z-index: 50; }
-        #record-btn { position: absolute; bottom: 30px; left: 15px; width: 60px; height: 60px; border-radius: 15px; display: none; z-index: 50; }
-        #screenshot-btn.visible, #record-btn.visible { display: flex; opacity: 1; pointer-events: auto !important; }
+        #screenshot-btn {
+            position: absolute; bottom: 30px; left: 50%; transform: translateX(-110%);
+            width: 60px; height: 60px; border-radius: 15px; z-index: 20;
+            display: none;
+        }
+        #screenshot-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
 
+        #record-btn {
+            position: absolute; bottom: 30px; left: 15px; 
+            width: 60px; height: 60px; border-radius: 15px; z-index: 20;
+            display: none;
+        }
+        #record-btn.visible { display: flex; opacity: 1; pointer-events: auto; }
         #record-btn.recording { border-color: #ff0000; animation: pulseRec 1s infinite; }
-        @keyframes pulseRec { 0%, 100% { box-shadow: 0 0 0px red; } 50% { box-shadow: 0 0 15px red; } }
+        @keyframes pulseRec { 0% { box-shadow: 0 0 0px red; } 50% { box-shadow: 0 0 15px red; } 100% { box-shadow: 0 0 0px red; } }
 
         #rec-timer {
             position: absolute; bottom: 45px; right: 15px;
             font-family: 'Press Start 2P', cursive; font-size: 10px;
             color: #ff0000; background: rgba(0, 0, 0, 0.5);
-            padding: 8px; border-radius: 5px; z-index: 50; display: none;
+            padding: 8px; border-radius: 5px; z-index: 20;
+            pointer-events: none; display: none;
         }
 
         #zoom-display {
             position: absolute; bottom: 15px; right: 15px;
             font-family: 'Press Start 2P', cursive; font-size: 10px;
             color: white; background: rgba(0, 0, 0, 0.5);
-            padding: 8px; border-radius: 5px; z-index: 50; opacity: 0;
+            padding: 8px; border-radius: 5px; z-index: 20;
+            pointer-events: none; opacity: 0; transition: opacity 0.3s;
         }
         #zoom-display.visible { opacity: 1; }
 
-        #scanner-ui { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60vw; height: 60vw; max-width: 320px; max-height: 320px; z-index: 5; pointer-events: none; opacity: 0; }
-        #scanner-ui.visible { opacity: 1; }
-        .corner { position: absolute; width: 30px; height: 30px; border: 8px solid white; }
-        .top-left { top: -4px; left: -4px; border-right: none; border-bottom: none; }
-        .top-right { top: -4px; right: -4px; border-left: none; border-bottom: none; }
-        .bottom-left { bottom: -4px; left: -4px; border-right: none; border-top: none; }
-        .bottom-right { bottom: -4px; right: -4px; border-left: none; border-top: none; }
+        .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
-        #overlay { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 80%; max-width: 400px; padding: 12px 0; color: white; background: rgba(0, 0, 0, 0.6); border-radius: 12px; z-index: 10; opacity: 0; pointer-events: none; overflow: hidden; }
-        #overlay.visible { opacity: 1; }
-        .marquee-text { display: inline-block; padding-left: 100%; animation: scroll-left 6.4s linear infinite; }
-        @keyframes scroll-left { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-
-        .msg-box { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; background: rgba(0, 0, 0, 0.9); border-radius: 15px; border: 2px solid white; z-index: 100; opacity: 0; pointer-events: none; font-family: Arial; }
+        .msg-box { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
+            font-size: 18px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
+            border-radius: 15px; border: 2px solid white; z-index: 40; transition: opacity 0.5s; 
+            opacity: 0; pointer-events: none; 
+        }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
+        
+        .prompt-container { display: flex; justify-content: space-around; margin-top: 20px; }
+        .prompt-btn {
+            padding: 10px 20px; font-family: 'Press Start 2P', cursive; font-size: 12px;
+            background: white; color: black; border: none; border-radius: 8px; cursor: pointer;
+        }
+        .prompt-btn:active { transform: scale(0.9); }
+        .prompt-btn.no { background: #555; color: white; }
 
-        #flash-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; opacity: 0; z-index: 200; pointer-events: none; }
+        #flash-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: white; opacity: 0; z-index: 100; pointer-events: none;
+        }
         .flash-active { animation: flashAnim 0.15s ease-out; }
         @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
     </style>
@@ -121,6 +218,14 @@
 <body>
 
     <div id="flash-overlay"></div>
+
+    <div id="scanner-ui">
+        <div class="corner top-left"></div>
+        <div class="corner top-right"></div>
+        <div class="corner bottom-left"></div>
+        <div class="corner bottom-right"></div>
+        <div class="scan-line"></div>
+    </div>
 
     <div id="start-screen">
         <div class="logo-wrapper" id="logo-container">
@@ -135,223 +240,385 @@
     <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon"></div>
     <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon"></div>
     <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon"></div>
-    
     <div id="screenshot-btn" class="btn-ui"><img src="assets/screenshoticon.png" class="ui-icon"></div>
     <div id="record-btn" class="btn-ui"><img src="assets/recordicon.png" class="ui-icon"></div>
 
     <div id="rec-timer">REC: 00:00</div>
     <div id="zoom-display">ZOOM: 1.0x</div>
 
-    <div id="help-message" class="msg-box">Scanner not loading? Pause VPN/Adblocker or use Chrome/Safari.</div>
-    <div id="info-message" class="msg-box">info update soon</div>
+    <div id="help-message" class="msg-box" style="font-family: Arial;">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="info-message" class="msg-box" style="font-family: Arial;">info update soon</div>
+    <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px; font-family: Arial;">flash unavailable</div>
+    
     <div id="download-prompt" class="msg-box">
-        <p>DOWNLOAD RECORDING?</p>
-        <button id="download-yes" style="padding:10px; background:white; color:black; border:none; border-radius:5px; margin:5px;">YES</button>
-        <button id="download-no" style="padding:10px; background:#555; color:white; border:none; border-radius:5px; margin:5px;">NO</button>
+        <p style="font-size: 10px; line-height: 1.5;">DOWNLOAD RECORDING?</p>
+        <div class="prompt-container">
+            <button id="download-yes" class="prompt-btn">YES</button>
+            <button id="download-no" class="prompt-btn no">NO</button>
+        </div>
+    </div>
+    
+    <div id="overlay">
+        <span class="marquee-text">Point camera at the SCANFREAK design!</span>
     </div>
 
-    <div id="overlay"><span class="marquee-text">Point camera at the SCANFREAK design!</span></div>
+    <a-scene id="ar-scene"
+        mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; filterMinCF: 0.0001; filterBeta: 0.001; missTolerance: 5; uiScanning: no" 
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights: true, preserveDrawingBuffer: true, antialias: false, alpha: true" 
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false" embedded>
 
-    <a-scene id="ar-scene" mindar-image="imageTargetSrc: descriptors/collection01/collection01.mind; uiScanning: no" embedded vr-mode-ui="enabled: false" renderer="preserveDrawingBuffer: true; antialias: false;">
         <a-assets>
             <audio id="sfx-start" src="assets/sfx/start.mp3" preload="auto"></audio>
             <audio id="sfx-startup" src="assets/sfx/startup.mp3" preload="auto"></audio>
             <audio id="sfx-help" src="assets/sfx/help.mp3" preload="auto"></audio>
+            <audio id="sfx-store" src="assets/sfx/store.mp3" preload="auto"></audio>
             <audio id="sfx-share" src="assets/sfx/share.mp3" preload="auto"></audio>
             <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
             <audio id="sfx-flash" src="assets/sfx/flash.mp3" preload="auto"></audio>
             <audio id="sfx-info" src="assets/sfx/info.mp3" preload="auto"></audio>
         </a-assets>
+
         <script>
             for(let i=0; i<=23; i++) {
                 document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
             }
         </script>
+
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
 
     <script>
+    const BASE_DATA = [
+        { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
+        { name: 'witch3', prefix: 'wit3', count: 6, folder: 'witch3' },
+        { name: 'witch2', prefix: 'wit2', count: 6, folder: 'witch2' },
+        { name: 'witch1', prefix: 'wit1', count: 6, folder: 'witch1' },
+        { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
+        { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' },
+        { name: 'seer', prefix: 'see', count: 20, folder: 'seer' },
+        { name: 'portal', prefix: 'por', count: 20, folder: 'portal' },
+        { name: 'nostradamus', prefix: 'nos', count: 20, folder: 'nostradamus' },
+        { name: 'mystic', prefix: 'mys', count: 20, folder: 'mystic' },
+        { name: 'mermaid', prefix: 'mer', count: 20, folder: 'mermaid' },
+        { name: 'fortune', prefix: 'for', count: 20, folder: 'fortune' }
+    ];
+
+    const COLLECTION_DATA = {};
+    BASE_DATA.forEach((data, index) => { COLLECTION_DATA[index] = data; COLLECTION_DATA[index + 12] = data; });
+
     const sceneEl = document.querySelector('a-scene');
+    const startScreen = document.getElementById('start-screen');
     const startBtn = document.getElementById('start-btn');
-    const shareBtn = document.getElementById('share-btn');
+    const scannerUi = document.getElementById('scanner-ui');
+    const overlay = document.getElementById('overlay');
+    const zoomDisplay = document.getElementById('zoom-display');
+    const flashOverlay = document.getElementById('flash-overlay');
+
     const helpBtn = document.getElementById('help-btn');
+    const ctaBtn = document.getElementById('cta-btn');
+    const shareBtn = document.getElementById('share-btn');
     const infoBtn = document.getElementById('info-btn');
     const flashBtn = document.getElementById('flash-btn');
     const screenshotBtn = document.getElementById('screenshot-btn');
     const recordBtn = document.getElementById('record-btn');
-    const zoomDisplay = document.getElementById('zoom-display');
     const recTimer = document.getElementById('rec-timer');
+
+    const downloadPrompt = document.getElementById('download-prompt');
+    const downloadYes = document.getElementById('download-yes');
+    const downloadNo = document.getElementById('download-no');
 
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
     const sfxHelp = document.getElementById('sfx-help');
+    const sfxStore = document.getElementById('sfx-store');
     const sfxShare = document.getElementById('sfx-share');
     const sfxScreenshot = document.getElementById('sfx-screenshot');
     const sfxFlash = document.getElementById('sfx-flash');
     const sfxInfo = document.getElementById('sfx-info');
 
     let isStarted = false;
+    let msgTimeout;
+    const videoPool = {}; 
+    let currentScale = 1;
+    let initialDist = 0;
+    let lastFoundTargetIndex = null;
+    let sessionPersistentTargetIndex = null;
+    let isFlashOn = false;
+    let track = null;
     let cameraVideo = null;
-    let isRecording = false;
+
     let mediaRecorder;
     let recordedChunks = [];
-    const videoPool = {};
-    let lastFoundTargetIndex = null;
-    let currentScale = 1;
+    let isRecording = false;
+    let startTime;
+    let timerInterval;
+    let lastRecordedBlob = null; 
+    
+    let audioContext;
+    let audioDest;
+    const videoSourceNodes = {}; 
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // --- BUTTON LISTENERS (Restored & Protected) ---
-
-    shareBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation(); // Stop scene from stealing click
-        triggerHaptic();
-        sfxShare.currentTime = 0; sfxShare.play();
-        if (navigator.share) {
-            navigator.share({ title: 'SCANFREAK AR', url: window.location.href });
-        } else {
-            alert("Link copied to clipboard!");
-            navigator.clipboard.writeText(window.location.href);
+    const showMessage = (el) => {
+        document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
+        el.classList.add('visible');
+        if (el !== downloadPrompt) {
+            clearTimeout(msgTimeout);
+            msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
         }
-    });
+    };
 
-    helpBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        triggerHaptic(); sfxHelp.play();
-        document.getElementById('help-message').classList.add('visible');
-        setTimeout(() => document.getElementById('help-message').classList.remove('visible'), 5000);
-    });
+    const findCameraVideo = () => {
+        cameraVideo = Array.from(document.querySelectorAll('video')).find(v => 
+            v.style.position === 'absolute' || 
+            (v.videoWidth > 0 && v.style.display !== 'none' && !Object.values(videoPool).includes(v))
+        );
+    };
 
-    infoBtn.addEventListener('click', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play();
-        document.getElementById('info-message').classList.add('visible');
-        setTimeout(() => document.getElementById('info-message').classList.remove('visible'), 5000);
-    });
-
-    flashBtn.addEventListener('click', async (e) => {
-        e.preventDefault(); e.stopPropagation();
+    const toggleFlash = async () => {
         triggerHaptic(); sfxFlash.currentTime = 0; sfxFlash.play();
-        const track = cameraVideo?.srcObject?.getVideoTracks()[0];
         try {
-            const status = track.getSettings().torch;
-            await track.applyConstraints({ advanced: [{ torch: !status }] });
-        } catch (err) { console.log("Flash not supported"); }
+            if (!cameraVideo) findCameraVideo();
+            if (!track && cameraVideo) track = cameraVideo.srcObject.getVideoTracks()[0];
+            const capabilities = track.getCapabilities();
+            if (!capabilities.torch) throw new Error('Torch not supported');
+            isFlashOn = !isFlashOn;
+            await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
+        } catch (err) { showMessage(document.getElementById('flash-error-message')); }
+    };
+
+    const toggleRecording = () => {
+        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
+        if (!isRecording) startRecording(); else stopRecording();
+    };
+
+    const startRecording = async () => {
+        recordedChunks = [];
+        if (!cameraVideo) findCameraVideo();
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            audioDest = audioContext.createMediaStreamDestination();
+        }
+        if (audioContext.state === 'suspended') await audioContext.resume();
+
+        const arCanvas = sceneEl.canvas;
+        const streamCanvas = document.createElement('canvas');
+        const ctx = streamCanvas.getContext('2d', { alpha: false }); // Performance boost
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high'; // Improve quality
+        
+        streamCanvas.width = arCanvas.width;
+        streamCanvas.height = arCanvas.height;
+
+        let micStream;
+        try {
+            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const micSource = audioContext.createMediaStreamSource(micStream);
+            micSource.connect(audioDest);
+        } catch (e) { console.log("Mic access denied", e); }
+
+        if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
+            const activeVideo = videoPool[lastFoundTargetIndex];
+            if (!videoSourceNodes[lastFoundTargetIndex]) {
+                videoSourceNodes[lastFoundTargetIndex] = audioContext.createMediaElementSource(activeVideo);
+            }
+            videoSourceNodes[lastFoundTargetIndex].connect(audioDest);
+            videoSourceNodes[lastFoundTargetIndex].connect(audioContext.destination);
+        }
+
+        const captureLoop = () => {
+            if (!isRecording) return;
+            if (cameraVideo && cameraVideo.readyState >= 2) {
+                const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
+                const canvasAspect = streamCanvas.width / streamCanvas.height;
+                let drawWidth, drawHeight, offsetX, offsetY;
+                if (videoAspect > canvasAspect) {
+                    drawHeight = streamCanvas.height; drawWidth = drawHeight * videoAspect;
+                    offsetX = -(drawWidth - streamCanvas.width) / 2; offsetY = 0;
+                } else {
+                    drawWidth = streamCanvas.width; drawHeight = drawWidth / videoAspect;
+                    offsetX = 0; offsetY = -(drawHeight - streamCanvas.height) / 2;
+                }
+                ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
+            }
+            ctx.drawImage(arCanvas, 0, 0, streamCanvas.width, streamCanvas.height);
+            requestAnimationFrame(captureLoop);
+        };
+
+        const videoStream = streamCanvas.captureStream(30);
+        const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
+        
+        // QUALITY UPGRADE: Set high bitrate (8Mbps)
+        mediaRecorder = new MediaRecorder(combinedStream, { 
+            mimeType: 'video/webm;codecs=vp9',
+            videoBitsPerSecond: 8000000 
+        });
+        
+        mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+        mediaRecorder.onstop = () => { if (micStream) micStream.getTracks().forEach(t => t.stop()); handleStopRecording(); };
+        isRecording = true;
+        mediaRecorder.start();
+        recordBtn.classList.add('recording');
+        recTimer.style.display = 'block';
+        startTime = Date.now();
+        timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            recTimer.innerText = `REC: ${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+        }, 1000);
+        captureLoop();
+    };
+
+    const stopRecording = () => {
+        isRecording = false;
+        if (mediaRecorder && mediaRecorder.state !== "inactive") mediaRecorder.stop();
+        recordBtn.classList.remove('recording');
+        recTimer.style.display = 'none';
+        clearInterval(timerInterval);
+    };
+
+    const handleStopRecording = async () => {
+        lastRecordedBlob = new Blob(recordedChunks, { type: 'video/mp4' });
+        const file = new File([lastRecordedBlob], "scanfreak_ar.mp4", { type: 'video/mp4' });
+        
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'SCANFREAK AR',
+                    text: 'Check out this AR capture! 🔊👀',
+                    files: [file]
+                });
+                kickstartActiveVideo();
+            } catch (err) {
+                kickstartActiveVideo();
+                showMessage(downloadPrompt); 
+            }
+        } else {
+            showMessage(downloadPrompt);
+        }
+    };
+
+    downloadYes.addEventListener('click', () => {
+        if (lastRecordedBlob) {
+            const url = URL.createObjectURL(lastRecordedBlob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'scanfreak_ar.mp4'; a.click();
+            URL.revokeObjectURL(url);
+        }
+        downloadPrompt.classList.remove('visible');
     });
 
-    // --- AR LOGIC ---
+    downloadNo.addEventListener('click', () => { downloadPrompt.classList.remove('visible'); });
 
-    const BASE_DATA = [
-        { name: 'wizard', prefix: 'wiz', count: 20, folder: 'wizard' },
-        { name: 'tealeaf', prefix: 'tea', count: 20, folder: 'tealeaf' },
-        { name: 'tarot', prefix: 'tar', count: 78, folder: 'tarot' }
-        // ... (remaining items kept in full build)
-    ];
-    // Re-calculating full COLLECTION_DATA (simplified for brevity here, use full list in your file)
-    const COLLECTION_DATA = {};
-    for(let i=0; i<24; i++) COLLECTION_DATA[i] = { folder: 'wizard', prefix: 'wiz', count: 20 };
+    const kickstartActiveVideo = () => {
+        if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
+            const v = videoPool[lastFoundTargetIndex];
+            if (audioContext && audioContext.state === 'suspended') audioContext.resume();
+            v.play().catch(() => { v.muted = true; v.play(); });
+        }
+    };
+
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kickstartActiveVideo(); });
 
     const setupTarget = (index) => {
+        const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
+        if (!target) return;
         const plane = target.querySelector('a-plane');
+        let isTargetVisible = false;
         const video = document.createElement('video');
-        video.setAttribute('playsinline', ''); video.loop = false; video.crossOrigin = "anonymous";
+        video.crossOrigin = "anonymous"; video.loop = false; video.preload = "auto";
+        video.setAttribute('playsinline', ''); video.style.display = 'none';
+        document.body.appendChild(video);
         videoPool[index] = video;
 
-        target.addEventListener('targetFound', () => {
-            if (!isStarted) return;
-            triggerHaptic();
-            lastFoundTargetIndex = index;
-            document.getElementById('scanner-ui').classList.remove('visible');
-            document.getElementById('overlay').classList.remove('visible');
-            screenshotBtn.classList.add('visible'); recordBtn.classList.add('visible'); zoomDisplay.classList.add('visible');
-            
-            const data = COLLECTION_DATA[index];
-            video.src = `videos/collection01/${data.folder}/${data.prefix}${Math.floor(Math.random()*data.count)+1}.mp4`;
-            video.load();
-            video.onloadeddata = () => {
+        video.onloadeddata = () => {
+            if (isTargetVisible) {
+                plane.setAttribute('height', video.videoHeight / video.videoWidth);
                 plane.setAttribute('material', {src: video, shader: 'flat'});
                 plane.setAttribute('visible', true);
-                video.play();
-            };
+                video.play().catch(e => console.log(e));
+            }
+        };
+
+        target.addEventListener('targetFound', () => {
+            if (!isStarted) return; 
+            triggerHaptic(); isTargetVisible = true;
+            lastFoundTargetIndex = index; sessionPersistentTargetIndex = index;
+            overlay.classList.remove('visible'); scannerUi.classList.remove('visible');
+            document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
+            [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.remove('visible'));
+            screenshotBtn.classList.add('visible'); recordBtn.classList.add('visible'); zoomDisplay.classList.add('visible');
+            const rand = Math.floor(Math.random() * data.count) + 1;
+            video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
+            video.load();
         });
 
         target.addEventListener('targetLost', () => {
-            plane.setAttribute('visible', false); video.pause();
+            isTargetVisible = false; plane.setAttribute('visible', false);
+            screenshotBtn.classList.remove('visible'); recordBtn.classList.remove('visible'); zoomDisplay.classList.remove('visible');
+            currentScale = 1; plane.setAttribute('scale', '1 1 1');
             lastFoundTargetIndex = null;
-            if (isStarted && !isRecording) {
-                document.getElementById('scanner-ui').classList.add('visible');
-                document.getElementById('overlay').classList.add('visible');
-                screenshotBtn.classList.remove('visible'); recordBtn.classList.remove('visible'); zoomDisplay.classList.remove('visible');
+            if (isStarted) {
+                overlay.classList.add('visible'); scannerUi.classList.add('visible');
+                [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
             }
+            video.pause();
         });
     };
+
+    window.addEventListener('load', () => Object.keys(COLLECTION_DATA).forEach(index => setupTarget(index)));
 
     startBtn.addEventListener('click', () => {
         triggerHaptic(); sfxStart.play();
         setTimeout(() => sfxStartup.play(), 2000);
-        document.getElementById('start-screen').classList.add('hidden');
-        document.getElementById('scanner-ui').classList.add('visible');
-        document.getElementById('overlay').classList.add('visible');
-        [helpBtn, shareBtn, infoBtn, flashBtn, document.getElementById('cta-btn')].forEach(b => b.classList.add('visible'));
+        startScreen.classList.add('hidden');
+        overlay.classList.add('visible'); scannerUi.classList.add('visible');
+        [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
-        cameraVideo = document.querySelector('video');
+        Object.values(videoPool).forEach(v => v.load());
+        findCameraVideo();
     });
 
-    // --- SCREENSHOT & RECORD (Preserving Quality) ---
+    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(document.getElementById('help-message')); });
+    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(document.getElementById('info-message')); });
+    flashBtn.addEventListener('click', toggleFlash);
+    recordBtn.addEventListener('click', toggleRecording);
+    
+    window.addEventListener('touchstart', (e) => { if (e.touches.length === 2 && lastFoundTargetIndex !== null) initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); });
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            currentScale = Math.min(Math.max(currentScale * (dist / initialDist), 0.5), 3);
+            initialDist = dist;
+            const plane = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`).querySelector('a-plane');
+            plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`); 
+            zoomDisplay.innerText = `ZOOM: ${currentScale.toFixed(1)}x`;
+        }
+    });
 
     screenshotBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxScreenshot.play();
-        document.getElementById('flash-overlay').classList.add('flash-active');
-        setTimeout(() => document.getElementById('flash-overlay').classList.remove('flash-active'), 150);
-        const canvas = document.createElement('canvas');
-        canvas.width = sceneEl.canvas.width; canvas.height = sceneEl.canvas.height;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(cameraVideo, 0, 0, canvas.width, canvas.height);
-        ctx.drawImage(sceneEl.canvas, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob(blob => {
-            const file = new File([blob], "capture.jpg", {type:"image/jpeg"});
-            if(navigator.share) navigator.share({files:[file]});
+        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
+        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
+        const arCanvas = sceneEl.canvas;
+        const out = document.createElement('canvas');
+        out.width = arCanvas.width; out.height = arCanvas.height;
+        const ctx = out.getContext('2d');
+        if (cameraVideo) ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
+        ctx.drawImage(arCanvas, 0, 0, out.width, out.height);
+        out.toBlob(async blob => {
+            const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
+            if (navigator.share) navigator.share({files: [file]});
         }, 'image/jpeg');
     });
 
-    recordBtn.addEventListener('click', () => {
-        triggerHaptic(); sfxScreenshot.play();
-        if (!isRecording) startRec(); else stopRec();
-    });
-
-    async function startRec() {
-        recordedChunks = [];
-        const stream = sceneEl.canvas.captureStream(30);
-        mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9', videoBitsPerSecond: 8000000 });
-        mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-        mediaRecorder.onstop = handleStop;
-        mediaRecorder.start();
-        isRecording = true;
-        recordBtn.classList.add('recording');
-        recTimer.style.display = 'block';
-    }
-
-    function stopRec() {
-        isRecording = false;
-        mediaRecorder.stop();
-        recordBtn.classList.remove('recording');
-        recTimer.style.display = 'none';
-    }
-
-    function handleStop() {
-        const blob = new Blob(recordedChunks, {type: 'video/mp4'});
-        const file = new File([blob], "ar_scan.mp4", {type: 'video/mp4'});
-        if(navigator.share) navigator.share({files:[file]});
-    }
-
-    window.addEventListener('load', () => {
-        for(let i=0; i<24; i++) setupTarget(i);
-    });
-
     sceneEl.addEventListener("arReady", () => {
-        document.getElementById('loading-container').style.display = 'none';
-        startBtn.classList.add('visible');
+        document.getElementById('loading-container').style.visibility = 'hidden'; 
+        document.getElementById('logo-container').classList.add('animate-sweep');
+        document.getElementById('main-logo').classList.add('animate-logo');
+        setTimeout(() => { startBtn.classList.add('visible'); }, 3000);
+        findCameraVideo();
     });
     </script>
 </body>
