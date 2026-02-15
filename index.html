@@ -358,8 +358,7 @@
     let timerInterval;
     let audioContext;
     let audioDest;
-    let micStream;
-    let videoSource;
+    let combinedStream;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -413,23 +412,20 @@
         streamCanvas.width = arCanvas.width;
         streamCanvas.height = arCanvas.height;
 
-        // --- Audio Handling ---
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
         audioDest = audioContext.createMediaStreamDestination();
         
-        // 1. Capture Microphone
         try {
-            micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const micSource = audioContext.createMediaStreamSource(micStream);
             micSource.connect(audioDest);
-        } catch (e) { console.log("Mic access denied or unavailable", e); }
+        } catch (e) { console.log("Mic access denied", e); }
 
-        // 2. Capture Current Active AR Video Audio
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const activeVideo = videoPool[lastFoundTargetIndex];
-            videoSource = audioContext.createMediaElementSource(activeVideo);
+            const videoSource = audioContext.createMediaElementSource(activeVideo);
             videoSource.connect(audioDest);
-            videoSource.connect(audioContext.destination); // Keep sound audible to user
+            videoSource.connect(audioContext.destination);
         }
 
         const captureLoop = () => {
@@ -452,15 +448,12 @@
         };
 
         const videoStream = streamCanvas.captureStream(30);
-        
-        // Combine Video and the mixed Audio
-        const combinedStream = new MediaStream([
+        combinedStream = new MediaStream([
             ...videoStream.getVideoTracks(),
             ...audioDest.stream.getAudioTracks()
         ]);
 
         mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
-
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = handleStopRecording;
 
@@ -486,16 +479,16 @@
         recordBtn.classList.remove('recording');
         recTimer.style.display = 'none';
         clearInterval(timerInterval);
+        
+        // Kill the streams immediately to release hardware
+        if (combinedStream) {
+            combinedStream.getTracks().forEach(track => track.stop());
+        }
     };
 
     const handleStopRecording = async () => {
         const blob = new Blob(recordedChunks, { type: 'video/mp4' });
         const file = new File([blob], "scanfreak_ar.mp4", { type: 'video/mp4' });
-
-        // Clean up audio tracks/nodes but DON'T close the context immediately 
-        // to prevent freezing the source video element
-        if (micStream) micStream.getTracks().forEach(track => track.stop());
-        if (videoSource) videoSource.disconnect();
         
         if (navigator.share) {
             try {
@@ -510,19 +503,34 @@
                 a.href = url; a.download = 'scanfreak_ar.mp4'; a.click();
             }
         }
+        
+        // Reset the active video if it's stuck
+        kickstartActiveVideo();
+        showMessage(recordMessage);
+    };
 
-        // Post-share Reset: If target is still found, kickstart the video
+    // --- CRITICAL FIX: RESET LOGIC ---
+    const kickstartActiveVideo = () => {
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
             const v = videoPool[lastFoundTargetIndex];
+            // If the audio context was used, it might be suspended
+            if (audioContext && audioContext.state === 'suspended') {
+                audioContext.resume();
+            }
+            // Force play and a tiny seek to refresh the buffer
             v.play().catch(() => {
-                // If play fails, force a slight seek to "nudge" the engine
-                v.currentTime = v.currentTime + 0.1;
+                v.muted = true; // Fallback if browser blocks sound resume
                 v.play();
             });
         }
-        
-        showMessage(recordMessage);
     };
+
+    // Listen for the user returning to the tab from the Share Sheet
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            kickstartActiveVideo();
+        }
+    });
 
     window.addEventListener('touchstart', (e) => {
         if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
@@ -559,7 +567,6 @@
                     const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
                     const canvasAspect = outputCanvas.width / outputCanvas.height;
                     let drawWidth, drawHeight, offsetX, offsetY;
-                    
                     if (videoAspect > canvasAspect) {
                         drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
                         offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
@@ -569,7 +576,6 @@
                     }
                     ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
                 }
-                
                 ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
                 outputCanvas.toBlob(blob => {
                     resolve(new File([blob], "scanfreak_ar.jpg", { type: "image/jpeg" }));
