@@ -193,12 +193,20 @@
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
-            font-size: 18px; font-family: Arial, sans-serif; background: rgba(0, 0, 0, 0.85); 
-            border-radius: 15px; border: 1px solid #555; z-index: 25; transition: opacity 0.5s; 
-            opacity: 0; pointer-events: none; cursor: pointer;
-            user-select: none; 
+            font-size: 18px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
+            border-radius: 15px; border: 2px solid white; z-index: 40; transition: opacity 0.5s; 
+            opacity: 0; pointer-events: none; 
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
+        
+        /* Specific styling for the prompt buttons */
+        .prompt-container { display: flex; justify-content: space-around; margin-top: 20px; }
+        .prompt-btn {
+            padding: 10px 20px; font-family: 'Press Start 2P', cursive; font-size: 12px;
+            background: white; color: black; border: none; border-radius: 8px; cursor: pointer;
+        }
+        .prompt-btn:active { transform: scale(0.9); }
+        .prompt-btn.no { background: #555; color: white; }
 
         #flash-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -228,37 +236,28 @@
         <button id="start-btn">PRESS START</button>
     </div>
 
-    <div id="help-btn" class="btn-ui">
-        <img src="assets/helpicon.png" class="ui-icon" alt="Help">
-    </div>
-    <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank">
-        <img src="assets/storeicon.png" class="ui-icon" alt="Shop">
-    </a>
-    <div id="share-btn" class="btn-ui">
-        <img src="assets/shareicon.png" class="ui-icon" alt="Share">
-    </div>
-    <div id="info-btn" class="btn-ui">
-        <img src="assets/infoicon.png" class="ui-icon" alt="Info">
-    </div>
-    <div id="flash-btn" class="btn-ui">
-        <img src="assets/flashicon.png" class="ui-icon" alt="Flash">
-    </div>
-    
-    <div id="screenshot-btn" class="btn-ui">
-        <img src="assets/screenshoticon.png" class="ui-icon" alt="Screenshot">
-    </div>
-
-    <div id="record-btn" class="btn-ui">
-        <img src="assets/recordicon.png" class="ui-icon" alt="Record">
-    </div>
+    <div id="help-btn" class="btn-ui"><img src="assets/helpicon.png" class="ui-icon"></div>
+    <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank"><img src="assets/storeicon.png" class="ui-icon"></a>
+    <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon"></div>
+    <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon"></div>
+    <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon"></div>
+    <div id="screenshot-btn" class="btn-ui"><img src="assets/screenshoticon.png" class="ui-icon"></div>
+    <div id="record-btn" class="btn-ui"><img src="assets/recordicon.png" class="ui-icon"></div>
 
     <div id="rec-timer">REC: 00:00</div>
     <div id="zoom-display">ZOOM: 1.0x</div>
 
-    <div id="help-message" class="msg-box">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
-    <div id="info-message" class="msg-box">info update soon</div>
-    <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px;">flash unavailable</div>
-    <div id="record-message" class="msg-box">Recording saved! Share your reality now.</div>
+    <div id="help-message" class="msg-box" style="font-family: Arial;">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="info-message" class="msg-box" style="font-family: Arial;">info update soon</div>
+    <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px; font-family: Arial;">flash unavailable</div>
+    
+    <div id="download-prompt" class="msg-box">
+        <p style="font-size: 10px; line-height: 1.5;">DOWNLOAD RECORDING?</p>
+        <div class="prompt-container">
+            <button id="download-yes" class="prompt-btn">YES</button>
+            <button id="download-no" class="prompt-btn no">NO</button>
+        </div>
+    </div>
     
     <div id="overlay">
         <span class="marquee-text">Point camera at the SCANFREAK design!</span>
@@ -307,10 +306,7 @@
     ];
 
     const COLLECTION_DATA = {};
-    BASE_DATA.forEach((data, index) => {
-        COLLECTION_DATA[index] = data;
-        COLLECTION_DATA[index + 12] = data;
-    });
+    BASE_DATA.forEach((data, index) => { COLLECTION_DATA[index] = data; COLLECTION_DATA[index + 12] = data; });
 
     const sceneEl = document.querySelector('a-scene');
     const startScreen = document.getElementById('start-screen');
@@ -329,10 +325,9 @@
     const recordBtn = document.getElementById('record-btn');
     const recTimer = document.getElementById('rec-timer');
 
-    const helpMessage = document.getElementById('help-message');
-    const infoMessage = document.getElementById('info-message');
-    const flashErrorMsg = document.getElementById('flash-error-message');
-    const recordMessage = document.getElementById('record-message');
+    const downloadPrompt = document.getElementById('download-prompt');
+    const downloadYes = document.getElementById('download-yes');
+    const downloadNo = document.getElementById('download-no');
 
     const sfxStart = document.getElementById('sfx-start');
     const sfxStartup = document.getElementById('sfx-startup');
@@ -359,6 +354,7 @@
     let isRecording = false;
     let startTime;
     let timerInterval;
+    let lastRecordedBlob = null; // Store blob for download choice
     
     let audioContext;
     let audioDest;
@@ -369,8 +365,10 @@
     const showMessage = (el) => {
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
         el.classList.add('visible');
-        clearTimeout(msgTimeout);
-        msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
+        if (el !== downloadPrompt) {
+            clearTimeout(msgTimeout);
+            msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
+        }
     };
 
     const findCameraVideo = () => {
@@ -381,9 +379,7 @@
     };
 
     const toggleFlash = async () => {
-        triggerHaptic();
-        sfxFlash.currentTime = 0;
-        sfxFlash.play();
+        triggerHaptic(); sfxFlash.currentTime = 0; sfxFlash.play();
         try {
             if (!cameraVideo) findCameraVideo();
             if (!track && cameraVideo) track = cameraVideo.srcObject.getVideoTracks()[0];
@@ -391,25 +387,21 @@
             if (!capabilities.torch) throw new Error('Torch not supported');
             isFlashOn = !isFlashOn;
             await track.applyConstraints({ advanced: [{ torch: isFlashOn }] });
-        } catch (err) { showMessage(flashErrorMsg); }
+        } catch (err) { showMessage(document.getElementById('flash-error-message')); }
     };
 
-    const toggleRecording = async () => {
-        triggerHaptic();
-        sfxScreenshot.currentTime = 0;
-        sfxScreenshot.play();
+    const toggleRecording = () => {
+        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
         if (!isRecording) startRecording(); else stopRecording();
     };
 
     const startRecording = async () => {
         recordedChunks = [];
         if (!cameraVideo) findCameraVideo();
-        
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)();
             audioDest = audioContext.createMediaStreamDestination();
         }
-        
         if (audioContext.state === 'suspended') await audioContext.resume();
 
         const arCanvas = sceneEl.canvas;
@@ -454,32 +446,20 @@
         };
 
         const videoStream = streamCanvas.captureStream(30);
-        const combinedStream = new MediaStream([
-            ...videoStream.getVideoTracks(),
-            ...audioDest.stream.getAudioTracks()
-        ]);
-
+        const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
         mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
-        mediaRecorder.onstop = () => {
-            if (micStream) micStream.getTracks().forEach(t => t.stop());
-            handleStopRecording();
-        };
-
+        mediaRecorder.onstop = () => { if (micStream) micStream.getTracks().forEach(t => t.stop()); handleStopRecording(); };
         isRecording = true;
         mediaRecorder.start();
         recordBtn.classList.add('recording');
         recTimer.style.display = 'block';
         startTime = Date.now();
-        timerInterval = setInterval(updateTimer, 1000);
+        timerInterval = setInterval(() => {
+            const elapsed = Math.floor((Date.now() - startTime) / 1000);
+            recTimer.innerText = `REC: ${String(Math.floor(elapsed / 60)).padStart(2, '0')}:${String(elapsed % 60).padStart(2, '0')}`;
+        }, 1000);
         captureLoop();
-    };
-
-    const updateTimer = () => {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        const mins = String(Math.floor(elapsed / 60)).padStart(2, '0');
-        const secs = String(elapsed % 60).padStart(2, '0');
-        recTimer.innerText = `REC: ${mins}:${secs}`;
     };
 
     const stopRecording = () => {
@@ -490,27 +470,47 @@
         clearInterval(timerInterval);
     };
 
+    // FIX: LOGIC TO HANDLE SHARE VS DOWNLOAD CHOICE
     const handleStopRecording = async () => {
-        const blob = new Blob(recordedChunks, { type: 'video/mp4' });
-        const file = new File([blob], "scanfreak_ar.mp4", { type: 'video/mp4' });
+        lastRecordedBlob = new Blob(recordedChunks, { type: 'video/mp4' });
+        const file = new File([lastRecordedBlob], "scanfreak_ar.mp4", { type: 'video/mp4' });
         
         if (navigator.share) {
             try {
+                // Wait for the native share sheet
                 await navigator.share({
                     title: 'SCANFREAK AR',
                     text: 'Check out this AR capture! 🔊👀',
                     files: [file]
                 });
+                // If it resolves, the user completed a share
+                kickstartActiveVideo();
             } catch (err) {
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = 'scanfreak_ar.mp4'; a.click();
+                // If the user cancelled or share failed, ask to download
+                console.log("Share cancelled or failed:", err);
+                kickstartActiveVideo();
+                showMessage(downloadPrompt); 
             }
+        } else {
+            // Fallback for browsers without navigator.share
+            showMessage(downloadPrompt);
         }
-        
-        kickstartActiveVideo();
-        showMessage(recordMessage);
     };
+
+    // Prompt Handlers
+    downloadYes.addEventListener('click', () => {
+        if (lastRecordedBlob) {
+            const url = URL.createObjectURL(lastRecordedBlob);
+            const a = document.createElement('a');
+            a.href = url; a.download = 'scanfreak_ar.mp4'; a.click();
+            URL.revokeObjectURL(url);
+        }
+        downloadPrompt.classList.remove('visible');
+    });
+
+    downloadNo.addEventListener('click', () => {
+        downloadPrompt.classList.remove('visible');
+    });
 
     const kickstartActiveVideo = () => {
         if (lastFoundTargetIndex !== null && videoPool[lastFoundTargetIndex]) {
@@ -520,62 +520,9 @@
         }
     };
 
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') kickstartActiveVideo();
-    });
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') kickstartActiveVideo(); });
 
-    window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
-            initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-        }
-    });
-
-    window.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
-            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
-            const delta = dist / initialDist;
-            initialDist = dist;
-            currentScale = Math.min(Math.max(currentScale * delta, 0.5), 3);
-            const target = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`);
-            const plane = target.querySelector('a-plane');
-            if (plane) { 
-                plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`); 
-                zoomDisplay.innerText = `ZOOM: ${currentScale.toFixed(1)}x`;
-            }
-        }
-    });
-
-    const captureFullImage = async () => {
-        return new Promise((resolve) => {
-            requestAnimationFrame(() => {
-                if (!cameraVideo) findCameraVideo();
-                const arCanvas = sceneEl.canvas;
-                const outputCanvas = document.createElement('canvas');
-                const ctx = outputCanvas.getContext('2d');
-                outputCanvas.width = arCanvas.width;
-                outputCanvas.height = arCanvas.height;
-
-                if (cameraVideo && cameraVideo.readyState >= 2) {
-                    const videoAspect = cameraVideo.videoWidth / cameraVideo.videoHeight;
-                    const canvasAspect = outputCanvas.width / outputCanvas.height;
-                    let drawWidth, drawHeight, offsetX, offsetY;
-                    if (videoAspect > canvasAspect) {
-                        drawHeight = outputCanvas.height; drawWidth = drawHeight * videoAspect;
-                        offsetX = -(drawWidth - outputCanvas.width) / 2; offsetY = 0;
-                    } else {
-                        drawWidth = outputCanvas.width; drawHeight = drawWidth / videoAspect;
-                        offsetX = 0; offsetY = -(drawHeight - outputCanvas.height) / 2;
-                    }
-                    ctx.drawImage(cameraVideo, offsetX, offsetY, drawWidth, drawHeight);
-                }
-                ctx.drawImage(arCanvas, 0, 0, outputCanvas.width, outputCanvas.height);
-                outputCanvas.toBlob(blob => {
-                    resolve(new File([blob], "scanfreak_ar.jpg", { type: "image/jpeg" }));
-                }, 'image/jpeg', 0.85);
-            });
-        });
-    };
-
+    // Target Setup
     const setupTarget = (index) => {
         const data = COLLECTION_DATA[index];
         const target = document.querySelector(`[mindar-image-target="targetIndex: ${index}"]`);
@@ -599,36 +546,24 @@
 
         target.addEventListener('targetFound', () => {
             if (!isStarted) return; 
-            triggerHaptic(); 
-            isTargetVisible = true;
-            lastFoundTargetIndex = index; 
-            sessionPersistentTargetIndex = index;
-            overlay.classList.remove('visible'); 
-            scannerUi.classList.remove('visible');
+            triggerHaptic(); isTargetVisible = true;
+            lastFoundTargetIndex = index; sessionPersistentTargetIndex = index;
+            overlay.classList.remove('visible'); scannerUi.classList.remove('visible');
             document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
             [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.remove('visible'));
-            screenshotBtn.classList.add('visible'); 
-            recordBtn.classList.add('visible');
-            zoomDisplay.classList.add('visible');
+            screenshotBtn.classList.add('visible'); recordBtn.classList.add('visible'); zoomDisplay.classList.add('visible');
             const rand = Math.floor(Math.random() * data.count) + 1;
             video.src = `videos/collection01/${data.folder}/${data.prefix}${rand}.mp4`;
             video.load();
-            if (!cameraVideo) findCameraVideo();
         });
 
         target.addEventListener('targetLost', () => {
-            isTargetVisible = false;
-            plane.setAttribute('visible', false);
-            screenshotBtn.classList.remove('visible'); 
-            recordBtn.classList.remove('visible');
-            zoomDisplay.classList.remove('visible');
-            currentScale = 1;
-            plane.setAttribute('scale', '1 1 1');
-            zoomDisplay.innerText = `ZOOM: 1.0x`;
+            isTargetVisible = false; plane.setAttribute('visible', false);
+            screenshotBtn.classList.remove('visible'); recordBtn.classList.remove('visible'); zoomDisplay.classList.remove('visible');
+            currentScale = 1; plane.setAttribute('scale', '1 1 1');
             lastFoundTargetIndex = null;
             if (isStarted) {
-                overlay.classList.add('visible'); 
-                scannerUi.classList.add('visible');
+                overlay.classList.add('visible'); scannerUi.classList.add('visible');
                 [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
             }
             video.pause();
@@ -641,62 +576,45 @@
         triggerHaptic(); sfxStart.play();
         setTimeout(() => sfxStartup.play(), 2000);
         startScreen.classList.add('hidden');
-        overlay.classList.add('visible'); 
-        scannerUi.classList.add('visible');
+        overlay.classList.add('visible'); scannerUi.classList.add('visible');
         [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn].forEach(btn => btn.classList.add('visible'));
         isStarted = true;
         Object.values(videoPool).forEach(v => v.load());
         findCameraVideo();
     });
 
-    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(helpMessage); });
-    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(infoMessage); });
+    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(document.getElementById('help-message')); });
+    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(document.getElementById('info-message')); });
     flashBtn.addEventListener('click', toggleFlash);
     recordBtn.addEventListener('click', toggleRecording);
     
-    document.querySelectorAll('.msg-box').forEach(msg => msg.addEventListener('click', () => { msg.classList.remove('visible'); clearTimeout(msgTimeout); }));
-    ctaBtn.addEventListener('click', () => { triggerHaptic(); sfxStore.play(); });
-    
-    shareBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
-        let shareImagePath = sessionPersistentTargetIndex !== null ? `assets/share/${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `assets/scanfreakblanklogo.png`;
-        let shareFileName = sessionPersistentTargetIndex !== null ? `${COLLECTION_DATA[sessionPersistentTargetIndex].name}_share.png` : `scanfreak_logo.png`;
-        if (navigator.share) {
-            try {
-                const response = await fetch(shareImagePath);
-                const blob = await response.blob();
-                const file = new File([blob], shareFileName, { type: 'image/png' });
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Check out this immersive AR experience 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [file]
-                });
-            } catch (err) { 
-                navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "Check out this immersive AR experience 👀",
-                    url: 'https://scanfreak.myshopify.com'
-                });
-            }
+    // Zoom Logic
+    window.addEventListener('touchstart', (e) => { if (e.touches.length === 2 && lastFoundTargetIndex !== null) initialDist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY); });
+    window.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 2 && lastFoundTargetIndex !== null) {
+            const dist = Math.hypot(e.touches[0].pageX - e.touches[1].pageX, e.touches[0].pageY - e.touches[1].pageY);
+            currentScale = Math.min(Math.max(currentScale * (dist / initialDist), 0.5), 3);
+            initialDist = dist;
+            const plane = document.querySelector(`[mindar-image-target="targetIndex: ${lastFoundTargetIndex}"]`).querySelector('a-plane');
+            plane.setAttribute('scale', `${currentScale} ${currentScale} ${currentScale}`); 
+            zoomDisplay.innerText = `ZOOM: ${currentScale.toFixed(1)}x`;
         }
     });
 
+    // Screenshot
     screenshotBtn.addEventListener('click', async () => {
         triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
-        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; 
-        flashOverlay.classList.add('flash-active');
-        try {
-            const imageFile = await captureFullImage();
-            if (navigator.share) {
-                await navigator.share({
-                    title: 'SCANFREAK AR',
-                    text: "The future is now! 👀",
-                    url: 'https://scanfreak.myshopify.com',
-                    files: [imageFile]
-                });
-            }
-        } catch (err) { console.log("Screenshot share failed", err); }
+        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
+        const arCanvas = sceneEl.canvas;
+        const out = document.createElement('canvas');
+        out.width = arCanvas.width; out.height = arCanvas.height;
+        const ctx = out.getContext('2d');
+        if (cameraVideo) ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
+        ctx.drawImage(arCanvas, 0, 0, out.width, out.height);
+        out.toBlob(async blob => {
+            const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
+            if (navigator.share) navigator.share({files: [file]});
+        }, 'image/jpeg');
     });
 
     sceneEl.addEventListener("arReady", () => {
