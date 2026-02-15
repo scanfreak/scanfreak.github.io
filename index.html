@@ -171,7 +171,6 @@
         #record-btn.recording { border-color: #ff0000; animation: pulseRec 1s infinite; }
         @keyframes pulseRec { 0% { box-shadow: 0 0 0px red; } 50% { box-shadow: 0 0 15px red; } 100% { box-shadow: 0 0 0px red; } }
 
-        /* FIX: Record timer positioned above zoom on the right */
         #rec-timer {
             position: absolute; bottom: 45px; right: 15px;
             font-family: 'Press Start 2P', cursive; font-size: 10px;
@@ -406,7 +405,10 @@
 
         const arCanvas = sceneEl.canvas;
         const streamCanvas = document.createElement('canvas');
-        const ctx = streamCanvas.getContext('2d');
+        const ctx = streamCanvas.getContext('2d', { alpha: false }); // Performance boost
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high'; // Improve quality
+        
         streamCanvas.width = arCanvas.width;
         streamCanvas.height = arCanvas.height;
 
@@ -447,7 +449,13 @@
 
         const videoStream = streamCanvas.captureStream(30);
         const combinedStream = new MediaStream([...videoStream.getVideoTracks(), ...audioDest.stream.getAudioTracks()]);
-        mediaRecorder = new MediaRecorder(combinedStream, { mimeType: 'video/webm;codecs=vp9' });
+        
+        // QUALITY UPGRADE: Set high bitrate (8Mbps)
+        mediaRecorder = new MediaRecorder(combinedStream, { 
+            mimeType: 'video/webm;codecs=vp9',
+            videoBitsPerSecond: 8000000 
+        });
+        
         mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
         mediaRecorder.onstop = () => { if (micStream) micStream.getTracks().forEach(t => t.stop()); handleStopRecording(); };
         isRecording = true;
