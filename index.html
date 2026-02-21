@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>SCANFREAK AR</title>
     
     <link rel="icon" type="image/png" href="assets/scanfreakblanklogo.png">
@@ -196,7 +196,6 @@
             font-size: 18px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
             border-radius: 15px; border: 2px solid white; z-index: 40; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; 
-            /* STRETCH FIX: Prevent text selection */
             user-select: none; -webkit-user-select: none;
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
@@ -238,7 +237,7 @@
     </div>
 
     <div id="help-btn" class="btn-ui"><img src="assets/helpicon.png" class="ui-icon"></div>
-    <a id="cta-btn" class="btn-ui" href="https://scanfreak.myshopify.com" target="_blank"><img src="assets/storeicon.png" class="ui-icon"></a>
+    <div id="cta-btn" class="btn-ui"><img src="assets/storeicon.png" class="ui-icon"></div>
     <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon"></div>
     <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon"></div>
     <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon"></div>
@@ -363,14 +362,9 @@
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // TWEAK: Refined message display with toggle logic
     const showMessage = (el) => {
         const isCurrentlyVisible = el.classList.contains('visible');
-        
-        // Hide all other boxes first
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
-        
-        // If it wasn't visible, show it. If it was, stay hidden (Toggle)
         if (!isCurrentlyVisible) {
             el.classList.add('visible');
             if (el !== downloadPrompt) {
@@ -593,24 +587,24 @@
 
     // --- BUTTON LISTENERS ---
     
-    // TWEAK: Help Button toggles, Help Menu closes when clicked
-    helpBtn.addEventListener('click', () => { 
-        triggerHaptic(); 
-        sfxHelp.play(); 
-        showMessage(document.getElementById('help-message')); 
+    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(document.getElementById('help-message')); });
+    document.getElementById('help-message').addEventListener('click', () => document.getElementById('help-message').classList.remove('visible'));
+    
+    // TWEAK: Store Button with SFX + Zoom-safe Link Opening
+    ctaBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        triggerHaptic();
+        sfxStore.currentTime = 0;
+        sfxStore.play();
+        setTimeout(() => {
+            window.open('https://scanfreak.myshopify.com', '_blank');
+        }, 150); // Small delay to ensure SFX starts
     });
 
-    document.getElementById('help-message').addEventListener('click', () => {
-        document.getElementById('help-message').classList.remove('visible');
-    });
-    
     infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(document.getElementById('info-message')); });
-    document.getElementById('info-message').addEventListener('click', () => {
-        document.getElementById('info-message').classList.remove('visible');
-    });
+    document.getElementById('info-message').addEventListener('click', () => document.getElementById('info-message').classList.remove('visible'));
 
     flashBtn.addEventListener('click', toggleFlash);
-    
     recordBtn.addEventListener('click', toggleRecording);
 
     shareBtn.addEventListener('click', async (e) => {
@@ -619,38 +613,27 @@
         triggerHaptic();
         sfxShare.currentTime = 0;
         sfxShare.play();
-
         const shareText = "Got my hands on some wild merch. It's freakin on another level - it literally comes alive! You've got to experience this immersive AR for yourself 👀";
         const shareUrl = "https://scanfreak.myshopify.com/";
         const shareTitle = "SCANFREAK AR";
-
         let filePath = "assets/scanfreakblanklogo.png"; 
         let fileName = "scanfreak.png";
-
         if (sessionPersistentTargetIndex !== null) {
             const data = COLLECTION_DATA[sessionPersistentTargetIndex];
             filePath = `assets/share/${data.name}_share.png`;
             fileName = `${data.name}_share.png`;
         }
-
         try {
             const response = await fetch(filePath);
             const blob = await response.blob();
             const fileToShare = new File([blob], fileName, { type: blob.type });
-
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
-                await navigator.share({
-                    title: shareTitle,
-                    text: shareText + " " + shareUrl,
-                    files: [fileToShare]
-                });
+                await navigator.share({ title: shareTitle, text: shareText + " " + shareUrl, files: [fileToShare] });
             } else if (navigator.share) {
                 await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
             }
         } catch (err) {
-            navigator.clipboard.writeText(shareText + " " + shareUrl).then(() => {
-                alert("Link copied to clipboard!");
-            });
+            navigator.clipboard.writeText(shareText + " " + shareUrl).then(() => alert("Link copied to clipboard!"));
         }
     });
 
@@ -670,17 +653,14 @@
         triggerHaptic(); 
         sfxScreenshot.currentTime = 0; 
         sfxScreenshot.play();
-        
         flashOverlay.classList.remove('flash-active'); 
         void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
-
         const arCanvas = sceneEl.canvas;
         sceneEl.renderer.render(sceneEl.object3D, sceneEl.camera);
         const arData = arCanvas.toDataURL('image/png');
         const arImg = new Image();
         arImg.src = arData;
-
         arImg.onload = () => {
             const out = document.createElement('canvas');
             out.width = arCanvas.width; 
@@ -688,7 +668,6 @@
             const ctx = out.getContext('2d');
             if (cameraVideo) ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
             ctx.drawImage(arImg, 0, 0, out.width, out.height);
-
             out.toBlob(async blob => {
                 const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
                 if (navigator.share) {
