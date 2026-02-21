@@ -590,7 +590,6 @@
     
     recordBtn.addEventListener('click', toggleRecording);
 
-    // FIXED: Smart Share Logic with Dynamic Image Preview and Fallback
     shareBtn.addEventListener('click', async (e) => {
         e.preventDefault(); 
         e.stopPropagation();
@@ -599,44 +598,33 @@
         sfxShare.play();
 
         const shareText = "Got my hands on some wild merch. It's freakin on another level - it literally comes alive! You've got to experience this immersive AR for yourself 👀";
-        const shareUrl = "http://scanfreak.myshopify.com/";
+        const shareUrl = "https://scanfreak.myshopify.com/";
         const shareTitle = "SCANFREAK AR";
 
-        let filePath = "assets/scanfreakblanklogo.png"; // Default fallback
+        let filePath = "assets/scanfreakblanklogo.png"; 
         let fileName = "scanfreak.png";
 
-        // Determine which image to share
         if (sessionPersistentTargetIndex !== null) {
             const data = COLLECTION_DATA[sessionPersistentTargetIndex];
-            // Uses the asset corresponding to the last scanned item
             filePath = `assets/share/${data.name}_share.png`;
             fileName = `${data.name}_share.png`;
         }
 
         try {
-            // Fetch the image as a blob
             const response = await fetch(filePath);
             const blob = await response.blob();
             const fileToShare = new File([blob], fileName, { type: blob.type });
 
-            // Attempt to share with file
             if (navigator.share && navigator.canShare && navigator.canShare({ files: [fileToShare] })) {
                 await navigator.share({
                     title: shareTitle,
                     text: shareText + " " + shareUrl,
                     files: [fileToShare]
                 });
-            } else {
-                // Fallback: Share text/URL only if file sharing is not supported
-                if (navigator.share) {
-                    await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
-                } else {
-                    throw new Error("Sharing not supported");
-                }
+            } else if (navigator.share) {
+                await navigator.share({ title: shareTitle, text: shareText, url: shareUrl });
             }
         } catch (err) {
-            console.log("Share failed or cancelled", err);
-            // Absolute Fallback: Clipboard
             navigator.clipboard.writeText(shareText + " " + shareUrl).then(() => {
                 alert("Link copied to clipboard!");
             });
@@ -655,18 +643,46 @@
         }
     });
 
+    // UPDATED SCREENSHOT LOGIC (MERGES BOTH VERSIONS)
     screenshotBtn.addEventListener('click', async () => {
-        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
-        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
+        triggerHaptic(); 
+        sfxScreenshot.currentTime = 0; 
+        sfxScreenshot.play();
+        
+        // Visual flash effect
+        flashOverlay.classList.remove('flash-active'); 
+        void flashOverlay.offsetWidth; 
+        flashOverlay.classList.add('flash-active');
+
         const arCanvas = sceneEl.canvas;
         const out = document.createElement('canvas');
-        out.width = arCanvas.width; out.height = arCanvas.height;
+        out.width = arCanvas.width; 
+        out.height = arCanvas.height;
         const ctx = out.getContext('2d');
-        if (cameraVideo) ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
+
+        // 1. Draw the camera feed (the person wearing the merch)
+        if (cameraVideo) {
+            ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
+        }
+        
+        // 2. Overlay the AR graphics (the design coming alive)
         ctx.drawImage(arCanvas, 0, 0, out.width, out.height);
+
         out.toBlob(async blob => {
             const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
-            if (navigator.share) navigator.share({files: [file]});
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'SCANFREAK AR',
+                        text: "The future is now - level up your reality or become obsolete! 👀",
+                        url: 'https://scanfreak.myshopify.com',
+                        files: [file]
+                    });
+                } catch (err) {
+                    console.log("Screenshot share failed", err);
+                }
+            }
         }, 'image/jpeg');
     });
 
