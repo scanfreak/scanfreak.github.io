@@ -196,6 +196,8 @@
             font-size: 18px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
             border-radius: 15px; border: 2px solid white; z-index: 40; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; 
+            /* STRETCH FIX: Prevent text selection */
+            user-select: none; -webkit-user-select: none;
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
         
@@ -361,12 +363,20 @@
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
+    // TWEAK: Refined message display with toggle logic
     const showMessage = (el) => {
+        const isCurrentlyVisible = el.classList.contains('visible');
+        
+        // Hide all other boxes first
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
-        el.classList.add('visible');
-        if (el !== downloadPrompt) {
-            clearTimeout(msgTimeout);
-            msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
+        
+        // If it wasn't visible, show it. If it was, stay hidden (Toggle)
+        if (!isCurrentlyVisible) {
+            el.classList.add('visible');
+            if (el !== downloadPrompt) {
+                clearTimeout(msgTimeout);
+                msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
+            }
         }
     };
 
@@ -583,10 +593,22 @@
 
     // --- BUTTON LISTENERS ---
     
-    helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(document.getElementById('help-message')); });
+    // TWEAK: Help Button toggles, Help Menu closes when clicked
+    helpBtn.addEventListener('click', () => { 
+        triggerHaptic(); 
+        sfxHelp.play(); 
+        showMessage(document.getElementById('help-message')); 
+    });
+
+    document.getElementById('help-message').addEventListener('click', () => {
+        document.getElementById('help-message').classList.remove('visible');
+    });
     
     infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(document.getElementById('info-message')); });
-    
+    document.getElementById('info-message').addEventListener('click', () => {
+        document.getElementById('info-message').classList.remove('visible');
+    });
+
     flashBtn.addEventListener('click', toggleFlash);
     
     recordBtn.addEventListener('click', toggleRecording);
