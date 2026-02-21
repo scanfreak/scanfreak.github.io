@@ -192,11 +192,12 @@
 
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            width: 80%; max-width: 400px; padding: 25px; text-align: center; color: white; 
-            font-size: 18px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
+            width: 85%; max-width: 400px; padding: 25px; text-align: center; color: white; 
+            font-size: 12px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
             border-radius: 15px; border: 2px solid white; z-index: 40; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; 
             user-select: none; -webkit-user-select: none;
+            line-height: 1.8;
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
         
@@ -247,8 +248,18 @@
     <div id="rec-timer">REC: 00:00</div>
     <div id="zoom-display">ZOOM: 1.0x</div>
 
-    <div id="help-message" class="msg-box" style="font-family: Arial;">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
-    <div id="info-message" class="msg-box" style="font-family: Arial;">info update soon</div>
+    <div id="help-message" class="msg-box" style="font-family: Arial; font-size: 16px;">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    
+    <div id="info-message" class="msg-box">
+        Welcome Freaks<br>
+        POINT SCAN DISCOVER!<br>
+        Scan your merch &<br>
+        discover a new reality.<br>
+        Most freaks just scan<br>
+        Some… tap deeper.<br>
+        -. .. -. .  - .. -- . ...
+    </div>
+
     <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px; font-family: Arial;">flash unavailable</div>
     
     <div id="download-prompt" class="msg-box">
@@ -590,29 +601,28 @@
     helpBtn.addEventListener('click', () => { triggerHaptic(); sfxHelp.play(); showMessage(document.getElementById('help-message')); });
     document.getElementById('help-message').addEventListener('click', () => document.getElementById('help-message').classList.remove('visible'));
     
-    // TWEAK: Store Button with SFX + Zoom-safe Link Opening
     ctaBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        triggerHaptic();
-        sfxStore.currentTime = 0;
-        sfxStore.play();
-        setTimeout(() => {
-            window.open('https://scanfreak.myshopify.com', '_blank');
-        }, 150); // Small delay to ensure SFX starts
+        e.preventDefault(); triggerHaptic(); sfxStore.currentTime = 0; sfxStore.play();
+        setTimeout(() => { window.open('https://scanfreak.myshopify.com', '_blank'); }, 150);
     });
 
-    infoBtn.addEventListener('click', () => { triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); showMessage(document.getElementById('info-message')); });
-    document.getElementById('info-message').addEventListener('click', () => document.getElementById('info-message').classList.remove('visible'));
+    // TWEAK: Info Button Toggle & Close
+    infoBtn.addEventListener('click', () => { 
+        triggerHaptic(); 
+        sfxInfo.currentTime = 0; 
+        sfxInfo.play(); 
+        showMessage(document.getElementById('info-message')); 
+    });
+    
+    document.getElementById('info-message').addEventListener('click', () => {
+        document.getElementById('info-message').classList.remove('visible');
+    });
 
     flashBtn.addEventListener('click', toggleFlash);
     recordBtn.addEventListener('click', toggleRecording);
 
     shareBtn.addEventListener('click', async (e) => {
-        e.preventDefault(); 
-        e.stopPropagation();
-        triggerHaptic();
-        sfxShare.currentTime = 0;
-        sfxShare.play();
+        e.preventDefault(); e.stopPropagation(); triggerHaptic(); sfxShare.currentTime = 0; sfxShare.play();
         const shareText = "Got my hands on some wild merch. It's freakin on another level - it literally comes alive! You've got to experience this immersive AR for yourself 👀";
         const shareUrl = "https://scanfreak.myshopify.com/";
         const shareTitle = "SCANFREAK AR";
@@ -650,12 +660,8 @@
     });
 
     screenshotBtn.addEventListener('click', async () => {
-        triggerHaptic(); 
-        sfxScreenshot.currentTime = 0; 
-        sfxScreenshot.play();
-        flashOverlay.classList.remove('flash-active'); 
-        void flashOverlay.offsetWidth; 
-        flashOverlay.classList.add('flash-active');
+        triggerHaptic(); sfxScreenshot.currentTime = 0; sfxScreenshot.play();
+        flashOverlay.classList.remove('flash-active'); void flashOverlay.offsetWidth; flashOverlay.classList.add('flash-active');
         const arCanvas = sceneEl.canvas;
         sceneEl.renderer.render(sceneEl.object3D, sceneEl.camera);
         const arData = arCanvas.toDataURL('image/png');
@@ -663,22 +669,14 @@
         arImg.src = arData;
         arImg.onload = () => {
             const out = document.createElement('canvas');
-            out.width = arCanvas.width; 
-            out.height = arCanvas.height;
+            out.width = arCanvas.width; out.height = arCanvas.height;
             const ctx = out.getContext('2d');
             if (cameraVideo) ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
             ctx.drawImage(arImg, 0, 0, out.width, out.height);
             out.toBlob(async blob => {
                 const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
                 if (navigator.share) {
-                    try {
-                        await navigator.share({
-                            title: 'SCANFREAK AR',
-                            text: "The future is now - level up your reality or become obsolete! 👀",
-                            url: 'https://scanfreak.myshopify.com',
-                            files: [file]
-                        });
-                    } catch (err) { console.log("Screenshot share failed", err); }
+                    try { await navigator.share({ title: 'SCANFREAK AR', text: "The future is now - level up your reality or become obsolete! 👀", url: 'https://scanfreak.myshopify.com', files: [file] }); } catch (err) { console.log("Screenshot share failed", err); }
                 }
             }, 'image/jpeg', 0.95);
         };
