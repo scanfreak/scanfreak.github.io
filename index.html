@@ -280,10 +280,18 @@
         </a-assets>
 
         <script>
-            for(let i=0; i<=23; i++) {
-                document.write(`<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`);
-            }
-        </script>
+    // Grab the element this script is currently sitting inside (the <a-scene>)
+    const currentScene = document.currentScript.parentNode;
+    
+    // Build all the HTML first
+    let targetsHTML = '';
+    for(let i = 0; i <= 23; i++) {
+        targetsHTML += `<a-entity mindar-image-target="targetIndex: ${i}"><a-plane class="ar-plane" visible="false" width="1" position="0 0.15 0.05" material="shader: flat; side: double; transparent: true"></a-plane></a-entity>`;
+    }
+    
+    // Inject it into the scene right now, before the camera loads
+    currentScene.insertAdjacentHTML('beforeend', targetsHTML);
+</script>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
     </a-scene>
