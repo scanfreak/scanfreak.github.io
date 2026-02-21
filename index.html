@@ -643,7 +643,7 @@
         }
     });
 
-    // RE-ENGINEERED SCREENSHOT LOGIC TO ENSURE AR DESIGN IS CAPTURED
+    // ULTIMATE FIX: Force render and capture to image data immediately
     screenshotBtn.addEventListener('click', async () => {
         triggerHaptic(); 
         sfxScreenshot.currentTime = 0; 
@@ -653,39 +653,47 @@
         void flashOverlay.offsetWidth; 
         flashOverlay.classList.add('flash-active');
 
-        // Capture logic
         const arCanvas = sceneEl.canvas;
-        const out = document.createElement('canvas');
-        out.width = arCanvas.width; 
-        out.height = arCanvas.height;
-        const ctx = out.getContext('2d');
-
-        // 1. Draw camera feed (background)
-        if (cameraVideo) {
-            ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
-        }
-
-        // 2. Force Render and Draw AR Canvas (Foreground)
-        // We use the A-Frame/Three.js renderer explicitly to ensure the frame is ready
+        
+        // Step 1: Force the scene to render right now
         sceneEl.renderer.render(sceneEl.object3D, sceneEl.camera);
-        ctx.drawImage(arCanvas, 0, 0, out.width, out.height);
+        
+        // Step 2: Convert AR canvas to a permanent image before it wipes
+        const arData = arCanvas.toDataURL('image/png');
+        const arImg = new Image();
+        arImg.src = arData;
 
-        out.toBlob(async blob => {
-            const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
-            
-            if (navigator.share) {
-                try {
-                    await navigator.share({
-                        title: 'SCANFREAK AR',
-                        text: "The future is now - level up your reality or become obsolete! 👀",
-                        url: 'https://scanfreak.myshopify.com',
-                        files: [file]
-                    });
-                } catch (err) {
-                    console.log("Screenshot share failed", err);
-                }
+        arImg.onload = () => {
+            const out = document.createElement('canvas');
+            out.width = arCanvas.width; 
+            out.height = arCanvas.height;
+            const ctx = out.getContext('2d');
+
+            // Draw Camera Feed first
+            if (cameraVideo) {
+                ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
             }
-        }, 'image/jpeg', 0.95); // 0.95 quality for better compression/speed
+
+            // Draw the captured AR frame on top
+            ctx.drawImage(arImg, 0, 0, out.width, out.height);
+
+            out.toBlob(async blob => {
+                const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
+                
+                if (navigator.share) {
+                    try {
+                        await navigator.share({
+                            title: 'SCANFREAK AR',
+                            text: "The future is now - level up your reality or become obsolete! 👀",
+                            url: 'https://scanfreak.myshopify.com',
+                            files: [file]
+                        });
+                    } catch (err) {
+                        console.log("Screenshot share failed", err);
+                    }
+                }
+            }, 'image/jpeg', 0.95);
+        };
     });
 
     sceneEl.addEventListener("arReady", () => {
