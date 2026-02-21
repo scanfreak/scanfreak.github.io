@@ -480,12 +480,13 @@
     const handleStopRecording = async () => {
         lastRecordedBlob = new Blob(recordedChunks, { type: 'video/mp4' });
         const file = new File([lastRecordedBlob], "scanfreak_ar.mp4", { type: 'video/mp4' });
+        const shareMsg = 'Check out this AR capture! 🔊👀 https://scanfreak.myshopify.com';
         
         if (navigator.share) {
             try {
                 await navigator.share({
                     title: 'SCANFREAK AR',
-                    text: 'Check out this AR capture! 🔊👀',
+                    text: shareMsg,
                     files: [file]
                 });
                 kickstartActiveVideo();
@@ -643,7 +644,6 @@
         }
     });
 
-    // ULTIMATE FIX: Force render and capture to image data immediately
     screenshotBtn.addEventListener('click', async () => {
         triggerHaptic(); 
         sfxScreenshot.currentTime = 0; 
@@ -654,11 +654,7 @@
         flashOverlay.classList.add('flash-active');
 
         const arCanvas = sceneEl.canvas;
-        
-        // Step 1: Force the scene to render right now
         sceneEl.renderer.render(sceneEl.object3D, sceneEl.camera);
-        
-        // Step 2: Convert AR canvas to a permanent image before it wipes
         const arData = arCanvas.toDataURL('image/png');
         const arImg = new Image();
         arImg.src = arData;
@@ -668,18 +664,11 @@
             out.width = arCanvas.width; 
             out.height = arCanvas.height;
             const ctx = out.getContext('2d');
-
-            // Draw Camera Feed first
-            if (cameraVideo) {
-                ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
-            }
-
-            // Draw the captured AR frame on top
+            if (cameraVideo) ctx.drawImage(cameraVideo, 0, 0, out.width, out.height);
             ctx.drawImage(arImg, 0, 0, out.width, out.height);
 
             out.toBlob(async blob => {
                 const file = new File([blob], "scanfreak.jpg", {type: "image/jpeg"});
-                
                 if (navigator.share) {
                     try {
                         await navigator.share({
@@ -688,9 +677,7 @@
                             url: 'https://scanfreak.myshopify.com',
                             files: [file]
                         });
-                    } catch (err) {
-                        console.log("Screenshot share failed", err);
-                    }
+                    } catch (err) { console.log("Screenshot share failed", err); }
                 }
             }, 'image/jpeg', 0.95);
         };
