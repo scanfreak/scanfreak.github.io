@@ -190,6 +190,7 @@
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
+        /* Updated Base Message Box */
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 85%; max-width: 400px; padding: 25px; text-align: center; color: white; 
@@ -201,8 +202,15 @@
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
         
-        /* TWEAK: Set Info & Help to normal font */
-        .normal-font { font-family: Arial, sans-serif; font-size: 18px; }
+        /* TWEAK: Square Info Box + Flex centering */
+        #info-message {
+            width: 75vw; height: 75vw; max-width: 300px; max-height: 300px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            font-size: 14px; padding: 15px;
+        }
+
+        .normal-font { font-family: Arial, sans-serif; font-size: 17px; }
+        #info-message.normal-font { font-size: 15px; } /* Slightly smaller to fit square better */
 
         .prompt-container { display: flex; justify-content: space-around; margin-top: 20px; }
         .prompt-btn {
@@ -376,7 +384,6 @@
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
-    // TWEAK: Added 9 second timeout for Info message
     const showMessage = (el) => {
         const isCurrentlyVisible = el.classList.contains('visible');
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
@@ -384,7 +391,6 @@
             el.classList.add('visible');
             if (el !== downloadPrompt) {
                 clearTimeout(msgTimeout);
-                // 9000ms for info/help, default to 5000 otherwise
                 const duration = (el.id === 'info-message' || el.id === 'help-message') ? 9000 : 5000;
                 msgTimeout = setTimeout(() => el.classList.remove('visible'), duration);
             }
@@ -613,9 +619,7 @@
     });
 
     infoBtn.addEventListener('click', () => { 
-        triggerHaptic(); 
-        sfxInfo.currentTime = 0; 
-        sfxInfo.play(); 
+        triggerHaptic(); sfxInfo.currentTime = 0; sfxInfo.play(); 
         showMessage(document.getElementById('info-message')); 
     });
     
