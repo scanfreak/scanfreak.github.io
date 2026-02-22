@@ -202,17 +202,18 @@
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
         
-        /* TWEAK: Precise 54vw Square Info Box */
-        #info-message {
+        /* TWEAK: Precise 54vw Square for Info AND Help Boxes */
+        #info-message, #help-message {
             width: 54vw; height: 54vw; 
             max-width: 250px; max-height: 250px;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
-            padding: 10px;
-            line-height: 1.35; /* Tighter line height to fit text in smaller box */
+            padding: 15px;
+            line-height: 1.35;
+            font-family: Arial, sans-serif;
+            font-size: 15px;
         }
 
         .normal-font { font-family: Arial, sans-serif; font-size: 17px; }
-        #info-message.normal-font { font-size: 15px; } /* Kept size similar but balanced for square */
 
         .prompt-container { display: flex; justify-content: space-around; margin-top: 20px; }
         .prompt-btn {
