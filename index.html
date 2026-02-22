@@ -149,11 +149,12 @@
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto !important; }
         
-        #help-btn { top: 15px; }
-        #cta-btn { top: 60px; } 
-        #share-btn { top: 105px; } 
-        #info-btn { top: 150px; }
-        #flash-btn { top: 195px; }
+        /* UPDATED BUTTON ORDER POSITIONING */
+        #info-btn { top: 15px; }
+        #flash-btn { top: 60px; }
+        #share-btn { top: 105px; }
+        #cta-btn { top: 150px; }
+        #help-btn { top: 195px; }
 
         #screenshot-btn {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-110%);
@@ -190,7 +191,6 @@
 
         .ui-icon { width: 70%; height: 70%; object-fit: contain; }
 
-        /* General Message Box Style */
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 85%; max-width: 400px; padding: 25px; text-align: center; color: white; 
@@ -202,7 +202,6 @@
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
         
-        /* TWEAK: Precise 54vw Square for Info AND Help Boxes */
         #info-message, #help-message {
             width: 54vw; height: 54vw; 
             max-width: 250px; max-height: 250px;
@@ -251,11 +250,12 @@
         <button id="start-btn">PRESS START</button>
     </div>
 
-    <div id="help-btn" class="btn-ui"><img src="assets/helpicon.png" class="ui-icon"></div>
-    <div id="cta-btn" class="btn-ui"><img src="assets/storeicon.png" class="ui-icon"></div>
-    <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon"></div>
     <div id="info-btn" class="btn-ui"><img src="assets/infoicon.png" class="ui-icon"></div>
     <div id="flash-btn" class="btn-ui"><img src="assets/flashicon.png" class="ui-icon"></div>
+    <div id="share-btn" class="btn-ui"><img src="assets/shareicon.png" class="ui-icon"></div>
+    <div id="cta-btn" class="btn-ui"><img src="assets/storeicon.png" class="ui-icon"></div>
+    <div id="help-btn" class="btn-ui"><img src="assets/helpicon.png" class="ui-icon"></div>
+
     <div id="screenshot-btn" class="btn-ui"><img src="assets/screenshoticon.png" class="ui-icon"></div>
     <div id="record-btn" class="btn-ui"><img src="assets/recordicon.png" class="ui-icon"></div>
 
