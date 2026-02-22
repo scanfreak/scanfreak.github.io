@@ -193,14 +193,17 @@
         .msg-box { 
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
             width: 85%; max-width: 400px; padding: 25px; text-align: center; color: white; 
-            font-size: 12px; font-family: 'Press Start 2P', cursive; background: rgba(0, 0, 0, 0.9); 
+            background: rgba(0, 0, 0, 0.9); 
             border-radius: 15px; border: 2px solid white; z-index: 40; transition: opacity 0.5s; 
             opacity: 0; pointer-events: none; 
             user-select: none; -webkit-user-select: none;
-            line-height: 1.8;
+            line-height: 1.6;
         }
         .msg-box.visible { opacity: 1; pointer-events: auto; }
         
+        /* TWEAK: Set Info & Help to normal font */
+        .normal-font { font-family: Arial, sans-serif; font-size: 18px; }
+
         .prompt-container { display: flex; justify-content: space-around; margin-top: 20px; }
         .prompt-btn {
             padding: 10px 20px; font-family: 'Press Start 2P', cursive; font-size: 12px;
@@ -248,9 +251,9 @@
     <div id="rec-timer">REC: 00:00</div>
     <div id="zoom-display">ZOOM: 1.0x</div>
 
-    <div id="help-message" class="msg-box" style="font-family: Arial; font-size: 16px;">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
+    <div id="help-message" class="msg-box normal-font">Scanner not loading? Pause your VPN, Adblocker or use link above in a default browser like Chrome or Safari.</div>
     
-    <div id="info-message" class="msg-box">
+    <div id="info-message" class="msg-box normal-font">
         Welcome Freaks<br>
         POINT SCAN DISCOVER!<br>
         Scan your merch &<br>
@@ -260,10 +263,10 @@
         -. .. -. .  - .. -- . ...
     </div>
 
-    <div id="flash-error-message" class="msg-box" style="width: auto; padding: 15px; font-family: Arial;">flash unavailable</div>
+    <div id="flash-error-message" class="msg-box normal-font" style="width: auto; padding: 15px;">flash unavailable</div>
     
-    <div id="download-prompt" class="msg-box">
-        <p style="font-size: 10px; line-height: 1.5;">DOWNLOAD RECORDING?</p>
+    <div id="download-prompt" class="msg-box" style="font-family: 'Press Start 2P', cursive; font-size: 10px;">
+        <p style="line-height: 1.5;">DOWNLOAD RECORDING?</p>
         <div class="prompt-container">
             <button id="download-yes" class="prompt-btn">YES</button>
             <button id="download-no" class="prompt-btn no">NO</button>
@@ -373,6 +376,7 @@
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
+    // TWEAK: Added 9 second timeout for Info message
     const showMessage = (el) => {
         const isCurrentlyVisible = el.classList.contains('visible');
         document.querySelectorAll('.msg-box').forEach(m => m.classList.remove('visible'));
@@ -380,7 +384,9 @@
             el.classList.add('visible');
             if (el !== downloadPrompt) {
                 clearTimeout(msgTimeout);
-                msgTimeout = setTimeout(() => el.classList.remove('visible'), 5000);
+                // 9000ms for info/help, default to 5000 otherwise
+                const duration = (el.id === 'info-message' || el.id === 'help-message') ? 9000 : 5000;
+                msgTimeout = setTimeout(() => el.classList.remove('visible'), duration);
             }
         }
     };
@@ -606,7 +612,6 @@
         setTimeout(() => { window.open('https://scanfreak.myshopify.com', '_blank'); }, 150);
     });
 
-    // TWEAK: Info Button Toggle & Close
     infoBtn.addEventListener('click', () => { 
         triggerHaptic(); 
         sfxInfo.currentTime = 0; 
