@@ -149,7 +149,6 @@
         }
         .btn-ui.visible { opacity: 1; pointer-events: auto !important; }
         
-        /* UPDATED BUTTON ORDER POSITIONING */
         #info-btn { top: 15px; }
         #flash-btn { top: 60px; }
         #share-btn { top: 105px; }
@@ -228,9 +227,39 @@
         }
         .flash-active { animation: flashAnim 0.15s ease-out; }
         @keyframes flashAnim { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* Easter Egg Styles */
+        #easter-egg-img {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+            z-index: 9999;
+            pointer-events: none;
+            display: none;
+            opacity: 1;
+        }
+
+        .glitch-active {
+            animation: glitchShake 0.12s infinite;
+        }
+
+        @keyframes glitchShake {
+            0% { transform: translate(-50%, -50%) translate(5px, 5px) scale(1.02); filter: hue-rotate(0deg); }
+            20% { transform: translate(-50%, -50%) translate(-5px, -5px) scale(0.98); filter: hue-rotate(90deg) invert(0.2); }
+            40% { transform: translate(-50%, -50%) translate(-8px, 8px) scale(1.05); filter: hue-rotate(-90deg); }
+            60% { transform: translate(-50%, -50%) translate(8px, -5px) scale(0.95); filter: invert(0.5); }
+            80% { transform: translate(-50%, -50%) translate(-3px, -8px) scale(1.02); filter: hue-rotate(180deg); }
+            100% { transform: translate(-50%, -50%) translate(5px, 5px) scale(1); filter: hue-rotate(0deg); }
+        }
     </style>
 </head>
 <body>
+
+    <img id="easter-egg-img" src="assets/dev.png" alt="dev">
 
     <div id="flash-overlay"></div>
 
@@ -270,8 +299,7 @@
         Scan your merch &<br>
         discover a new reality.<br>
         Most freaks just scan<br>
-        Some… tap deeper<br>
-        into reality.<br>
+        Some… tap deeper.<br>
         -. .. -. .  - .. -- . ...
     </div>
 
@@ -304,6 +332,7 @@
             <audio id="sfx-screenshot" src="assets/sfx/screenshot.mp3" preload="auto"></audio>
             <audio id="sfx-flash" src="assets/sfx/flash.mp3" preload="auto"></audio>
             <audio id="sfx-info" src="assets/sfx/info.mp3" preload="auto"></audio>
+            <audio id="sfx-matrix" src="assets/sfx/matrix.mp3" preload="auto"></audio>
         </a-assets>
 
         <script>
@@ -385,6 +414,10 @@
     let audioContext;
     let audioDest;
     const videoSourceNodes = {}; 
+
+    // Easter Egg Variables
+    let easterEggTaps = [];
+    let isEasterEggRunning = false;
 
     const triggerHaptic = () => { if (navigator.vibrate) navigator.vibrate(50); };
 
@@ -701,6 +734,79 @@
         document.getElementById('main-logo').classList.add('animate-logo');
         setTimeout(() => { startBtn.classList.add('visible'); }, 3000);
         findCameraVideo();
+    });
+
+    // --- EASTER EGG LOGIC ---
+
+    const triggerEasterEgg = () => {
+        isEasterEggRunning = true;
+        const matrixAudio = document.getElementById('sfx-matrix');
+        const eggImg = document.getElementById('easter-egg-img');
+        
+        // Phase 1: Reset & Start Audio (0s)
+        matrixAudio.currentTime = 0;
+        matrixAudio.play();
+        
+        eggImg.style.display = 'none';
+        eggImg.style.opacity = '1';
+        eggImg.style.transition = 'none';
+        eggImg.classList.remove('glitch-active');
+        
+        // Phase 2: Show Image normal (5s)
+        setTimeout(() => {
+            if(isEasterEggRunning) eggImg.style.display = 'block';
+        }, 5000);
+        
+        // Phase 3: Start Glitch (12s)
+        setTimeout(() => {
+            if(isEasterEggRunning) eggImg.classList.add('glitch-active');
+        }, 12000);
+        
+        // Phase 4: Fade Out (22s)
+        setTimeout(() => {
+            if(isEasterEggRunning) {
+                eggImg.style.transition = 'opacity 4s ease-out';
+                eggImg.style.opacity = '0';
+            }
+        }, 22000);
+        
+        // Phase 5: Cleanup & Reset (26s)
+        setTimeout(() => {
+            eggImg.style.display = 'none';
+            eggImg.classList.remove('glitch-active');
+            isEasterEggRunning = false;
+        }, 26000);
+    };
+
+    const handleCenterTap = (clientX, clientY) => {
+        if (!isStarted || isEasterEggRunning) return;
+        
+        const cx = window.innerWidth / 2;
+        const cy = window.innerHeight / 2;
+        const halfScannerWidth = window.innerWidth * 0.3; // 30vw (Half of 60vw)
+        
+        // Check if tap is inside the 60vw x 60vw scanner area
+        if (Math.abs(clientX - cx) <= halfScannerWidth && Math.abs(clientY - cy) <= halfScannerWidth) {
+            const now = Date.now();
+            easterEggTaps.push(now);
+            
+            // Keep only taps from the last 3 seconds
+            easterEggTaps = easterEggTaps.filter(t => now - t <= 3000);
+            
+            if (easterEggTaps.length >= 9) {
+                easterEggTaps = []; // reset
+                triggerEasterEgg();
+            }
+        }
+    };
+
+    // Attach listeners for both mobile touch and desktop click
+    window.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) handleCenterTap(e.touches[0].clientX, e.touches[0].clientY);
+    });
+    
+    window.addEventListener('mousedown', (e) => {
+        if (e.button === 0) handleCenterTap(e.clientX, e.clientY);
     });
     </script>
 </body>
