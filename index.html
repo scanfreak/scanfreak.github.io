@@ -751,6 +751,7 @@
         eggImg.style.display = 'none';
         eggImg.style.opacity = '1';
         eggImg.style.transition = 'none';
+        eggImg.style.pointerEvents = 'auto'; // Ensure it captures attention initially
         eggImg.classList.remove('glitch-active');
         
         // Phase 2: Show Image normal (5s)
@@ -762,7 +763,7 @@
         setTimeout(() => {
             if(isEasterEggRunning) {
                 eggImg.classList.add('glitch-active');
-                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Short-pulse vibration
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); 
             }
         }, 12000);
         
@@ -771,14 +772,32 @@
             if(isEasterEggRunning) {
                 eggImg.style.transition = 'opacity 4s ease-out';
                 eggImg.style.opacity = '0';
+                // Critical Fix: Disable pointer events so user can interact with AR again during fade
+                eggImg.style.pointerEvents = 'none'; 
             }
         }, 22000);
         
-        // Phase 5: Cleanup & Reset (26s)
+        // Phase 5: Cleanup & UI Resume (26s)
         setTimeout(() => {
             eggImg.style.display = 'none';
             eggImg.classList.remove('glitch-active');
             isEasterEggRunning = false;
+            easterEggTaps = []; // Reset tap counter
+            
+            // Critical Fix: Force the Scanner UI to return if no target is currently found
+            if (isStarted && lastFoundTargetIndex === null) {
+                scannerUi.classList.add('visible');
+                overlay.classList.add('visible');
+                
+                // Restore the side buttons
+                const buttons = [helpBtn, ctaBtn, shareBtn, infoBtn, flashBtn];
+                buttons.forEach(btn => {
+                    btn.classList.add('visible');
+                    btn.style.pointerEvents = 'auto'; // Ensure buttons are clickable
+                });
+            }
+            
+            console.log("Scanner resumed after Easter Egg.");
         }, 26000);
     };
 
