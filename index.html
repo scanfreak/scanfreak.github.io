@@ -297,9 +297,10 @@
         Welcome Freaks<br>
         POINT SCAN DISCOVER!<br>
         Scan your merch &<br>
-        discover a new reality.<br>
-        Most freaks just scan<br>
-        Some… tap deeper.<br>
+        discover a new world.<br>
+        Most freaks just Scan<br>
+        but some… Tap deeper<br>
+        into reality.<br>
         -. .. -. .  - .. -- . ...
     </div>
 
@@ -759,7 +760,10 @@
         
         // Phase 3: Start Glitch (12s)
         setTimeout(() => {
-            if(isEasterEggRunning) eggImg.classList.add('glitch-active');
+            if(isEasterEggRunning) {
+                eggImg.classList.add('glitch-active');
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]); // Short-pulse vibration
+            }
         }, 12000);
         
         // Phase 4: Fade Out (22s)
@@ -800,13 +804,13 @@
         }
     };
 
-    // Attach listeners for both mobile touch and desktop click
-    window.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) handleCenterTap(e.touches[0].clientX, e.touches[0].clientY);
-    });
-    
-    window.addEventListener('mousedown', (e) => {
-        if (e.button === 0) handleCenterTap(e.clientX, e.clientY);
+   // This replaces BOTH the touchstart and mousedown listeners
+window.addEventListener('pointerdown', (e) => {
+    // e.isPrimary ensures it only triggers for the first finger in a multi-touch
+    // e.button === 0 ensures it only triggers for a left-click on a mouse
+    if (e.isPrimary && e.button === 0) {
+        handleCenterTap(e.clientX, e.clientY);
+    }
     });
     </script>
 </body>
